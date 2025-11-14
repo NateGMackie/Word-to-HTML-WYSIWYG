@@ -1,0 +1,12 @@
+{
+"name": "word-to-html-wysiwyg",
+"private": true,
+"type": "module",
+"scripts": {
+"dev": "npx http-server -c-1 -p 5173 ./public",
+"format": "npx prettier -w ."
+},
+"devDependencies": {
+"prettier": "^3.3.3"
+}
+}

@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>W2H-Full WYSIWYG</title>
+  <meta name="color-scheme" content="dark"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ["Inter","ui-sans-serif","system-ui","-apple-system","Segoe UI","Roboto","Helvetica","Arial"] } } }
+    }
+  </script>
+  <style>
+    .rail-active { background-color: rgb(41 37 36 / 0.6) !important; border-color: rgb(82 82 82) !important; color: white !important; }
+    .tbtn{display:inline-flex;align-items:center;justify-content:center;width:2rem;height:2rem;border:1px solid rgb(41 37 36);border-radius:.5rem;color:#d6d3d1}
+    .tbtn:hover{background:rgb(41 37 36 / .6); border-color:#525252; color:#fff}
+    .tb-group{
+  display:flex; flex-wrap:wrap; align-items:center; gap:.375rem;
+  padding:.5rem; border:1px solid rgb(41 37 36);
+  border-radius:.75rem; background:rgb(12 10 9 / .35)
+}
+
+.tb-title{
+  font-size:.70rem; letter-spacing:.06em; text-transform:uppercase;
+  color:#a8a29e; margin-right:.25rem; padding:0 .35rem;
+  border:1px solid rgb(41 37 36); border-radius:.375rem;
+  background:rgb(28 25 23 / .6)
+}
+
+  </style>
+</head>
+<body class="bg-stone-900 text-stone-100 antialiased selection:bg-blue-500/30">
+  <!-- Dummy root to satisfy any external observers -->
+  <div id="root" style="display:none"></div>
+
+  <div class="min-h-screen flex">
+    <!-- LEFT RAIL -->
+    <aside class="w-[76px] border-r border-stone-800/80 bg-stone-900/60 backdrop-blur-sm">
+      <div class="flex flex-col items-center py-4 gap-4">
+        <div class="mt-1 mb-2 text-[10px] tracking-[0.2em] font-medium text-stone-300">W2H</div>
+
+        <!-- Views -->
+          <button id="navWysiwyg" class="group w-12 h-12 grid place-items-center rounded-lg border border-stone-800 text-stone-300 hover:text-white hover:border-stone-700 hover:bg-stone-800/50 transition" title="WYSIWYG">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+          </svg>
+        </button>
+        
+        <button id="navHtml" class="group w-12 h-12 grid place-items-center rounded-lg border border-stone-800 text-stone-300 hover:text-white hover:border-stone-700 hover:bg-stone-800/50 transition" title="Clean HTML">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="m7 8-4 4 4 4"/><path d="m17 8 4 4-4 4"/><path d="m14 4-4 16"/>
+          </svg>
+        </button>
+       <button id="navWord" class="group w-12 h-12 grid place-items-center rounded-lg border border-stone-800 text-stone-300 hover:text-white hover:border-stone-700 hover:bg-stone-800/50 transition" title="Word View">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/>
+          </svg>
+        </button>
+
+        <div class="my-2 h-px w-10 bg-stone-800"></div>
+
+        <!-- Global actions -->
+        <button id="btnCopy" class="group w-12 h-12 grid place-items-center rounded-lg border border-stone-800 text-stone-300 hover:text-white hover:border-stone-700 hover:bg-stone-800/50 transition" title="Copy (Active View)">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect width="8" height="8" x="8" y="8" rx="2"/><path d="M12 8V6a2 2 0 0 0-2-2H6"/><path d="M16 16h2a2 2 0 0 0 2-2v-2"/>
+          </svg>
+        </button>
+        <button id="btnSave" class="group w-12 h-12 grid place-items-center rounded-lg border border-stone-800 text-stone-300 hover:text-white hover:border-stone-700 hover:bg-stone-800/50 transition" title="Save HTML">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M7 21h10a2 2 0 0 0 2-2V7.5L15.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/><path d="M7 7h8v4H7z"/>
+          </svg>
+        </button>
+
+        <div class="flex-1"></div>
+        <div class="mb-3 px-2 py-1 rounded-md border border-stone-800 text-[10px] text-stone-400">DARK</div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-4 py-3 border-b border-stone-800/80">
+        <div class="flex items-center gap-2">
+          <span id="badgeActive" class="px-2 py-1 text-xs rounded-md border border-stone-800 text-stone-300">View: WYSIWYG</span>
+          <span class="text-xs text-stone-500 select-none">Active view controls copy/save behavior</span>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-stone-500">
+          <div>HTML size: <span id="statBytes">0</span> bytes</div>
+          <div>Words: <span id="statWords">0</span></div>
+        </div>
+      </div>
+
+      <!-- Toolbars -->
+      <div class="px-4 py-3 border-b border-stone-800/80">
+        <!-- Word -->
+<div id="toolsWord" class="flex items-center justify-between gap-2">
+  <!-- Left group -->
+  <div class="flex flex-wrap gap-2">
+    <button id="btnPaste"
+      class="px-3 py-1.5 rounded-md border border-stone-800 hover:border-stone-700 hover:bg-stone-800/60">
+      Paste
+    </button>
+    <button id="btnClean"
+      class="px-3 py-1.5 rounded-md border border-stone-800 bg-stone-900 hover:bg-stone-800/70 hover:border-stone-700">
+      Clean
+    </button>
+  </div>
+
+  <!-- Right (destructive) -->
+  <div>
+    <button id="btnClearAll"
+      class="px-3 py-1.5 rounded-md border border-stone-800 bg-stone-900 hover:text-red-200 hover:border-red-500 hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-red-500/40"
+      title="Clear all pasted content">
+      Reset
+    </button>
+  </div>
+</div>
+
+
+        <!-- HTML -->
+        <div id="toolsHtml" class="hidden flex flex-wrap gap-2">
+          <button id="btnFormatHtml" class="px-3 py-1.5 rounded-md border border-stone-800 hover:border-stone-700 hover:bg-stone-800/60">Pretty</button>
+        </div>
+
+        <!-- WYSIWYG -->
+<div id="toolsWysiwyg" class="hidden">
+  <div class="flex flex-wrap items-center gap-2">
+    <!-- Section 1: Font -->
+    <div class="tb-group">
+      <span class="tb-title">Font</span>
+      <button data-action="bold" class="tbtn" title="Bold">B</button>
+      <button data-action="italic" class="tbtn" title="Italic"><i>I</i></button>
+      <button data-action="underline" class="tbtn" title="Underline"><u>U</u></button>
+      <button data-action="strikeThrough" class="tbtn" title="Strikethrough"><span style="text-decoration:line-through">S</span></button>
+      <button data-action="subscript" class="tbtn" title="Subscript">x<sub>2</sub></button>
+      <button data-action="superscript" class="tbtn" title="Superscript">x<sup>2</sup></button>
+     <button data-action="link" class="tbtn" title="Insert link" aria-label="Insert link">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <!-- link-2 style -->
+    <path d="M15 7h3a5 5 0 0 1 0 10h-3"/>
+    <path d="M9 17H6A5 5 0 0 1 6 7h3"/>
+    <path d="M8 12h8"/>
+  </svg>
+</button>
+
+      <button data-action="unlink" class="tbtn" title="Remove link" aria-label="Remove link">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 7h3a5 5 0 0 1 0 10h-3"/>
+    <path d="M9 17H6A5 5 0 0 1 6 7h3"/>
+    <path d="M8 12h8"/>
+    <path d="M4 4l3 3M17 17l3 3"/>
+  </svg>
+</button>
+
+      <button data-action="removeFormat" class="tbtn" title="Remove formatting">⌫</button>
+    </div>
+
+    <!-- Section 2: Paragraph styles -->
+    <div class="tb-group">
+      <span class="tb-title">Paragraph</span>
+      <button id="btnUl" class="tbtn" title="Bulleted list">•</button>
+      <button id="btnOl" class="tbtn" title="Numbered list">1.</button>
+      <button id="btnIndent" class="tbtn" title="Increase indent">→</button>
+      <button id="btnOutdent" class="tbtn" title="Decrease indent">←</button>
+      <button id="btnAlignLeft" class="tbtn" title="Align left" aria-label="Align left">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <line x1="4" y1="6" x2="20" y2="6"/>
+    <line x1="4" y1="10" x2="14" y2="10"/>
+    <line x1="4" y1="14" x2="18" y2="14"/>
+    <line x1="4" y1="18" x2="10" y2="18"/>
+  </svg>
+</button>
+
+      <button id="btnAlignCenter" class="tbtn" title="Align center" aria-label="Align center">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <line x1="6" y1="6" x2="18" y2="6"/>
+    <line x1="4" y1="10" x2="20" y2="10"/>
+    <line x1="7" y1="14" x2="17" y2="14"/>
+    <line x1="5" y1="18" x2="19" y2="18"/>
+  </svg>
+</button>
+
+      <button id="btnAlignRight" class="tbtn" title="Align right" aria-label="Align right">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <line x1="4" y1="6" x2="20" y2="6"/>
+    <line x1="10" y1="10" x2="20" y2="10"/>
+    <line x1="6" y1="14" x2="20" y2="14"/>
+    <line x1="14" y1="18" x2="20" y2="18"/>
+  </svg>
+</button>
+
+      <button id="btnAlignJustify" class="tbtn" title="Justify" aria-label="Justify">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <line x1="4" y1="6" x2="20" y2="6"/>
+    <line x1="4" y1="10" x2="20" y2="10"/>
+    <line x1="4" y1="14" x2="20" y2="14"/>
+    <line x1="4" y1="18" x2="20" y2="18"/>
+  </svg>
+</button>
+
+    </div>
+
+    <!-- Section 3: Formatting -->
+    <div class="tb-group">
+      <span class="tb-title">Formatting</span>
+
+      <!-- Styles: block formats + callouts in one control -->
+<div class="relative">
+  <select id="stylesSelect" aria-label="Styles" title="Styles"
+    class="appearance-none bg-stone-900/80 text-stone-200 text-sm px-3 py-1.5 pr-8 rounded-md border border-stone-800 hover:border-stone-700 focus:outline-none min-w-[12rem]">
+    <!-- Placeholder (not a real value) -->
+    <option value="" selected disabled>Styles</option>
+
+    <optgroup label="Block">
+      <option value="block:p">Paragraph</option>
+      <option value="block:h1">Heading 1</option>
+      <option value="block:h2">Heading 2</option>
+      <option value="block:h3">Heading 3</option>
+      <option value="block:pre">Code Block</option>
+      <option value="block:blockquote">Blockquote</option>
+    </optgroup>
+
+    <optgroup label="Callouts">
+      <option value="callout:note">Note</option>
+      <option value="callout:warning">Warning</option>
+      <option value="callout:example-block">Example</option>
+      <option value="callout:remove">Remove callout</option>
+    </optgroup>
+  </select>
+
+  <div class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-500">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="m6 9 6 6 6-6"/>
+    </svg>
+  </div>
+</div>
+
+
+      <!-- Utilities -->
+      <button id="btnScreenshot" class="tbtn" title="Screenshot style" aria-label="Screenshot style">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <!-- camera -->
+    <path d="M5 7h3l2-3h4l2 3h3"/>
+    <path d="M2 7h20v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </svg>
+</button>
+
+      <button id="btnNormalizeTable" class="tbtn" title="Normalize table" aria-label="Normalize table">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <!-- table -->
+    <rect x="3" y="5" width="18" height="14" rx="2"/>
+    <path d="M3 10h18"/>
+    <path d="M8 5v14"/>
+    <path d="M16 5v14"/>
+  </svg>
+</button>
+
+      <button id="btnUserInput" class="tbtn" title="User input" aria-label="User input">
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <!-- keyboard -->
+    <rect x="3" y="7" width="18" height="10" rx="2"/>
+    <path d="M6 11h12"/>
+    <path d="M5 15h14"/>
+  </svg>
+</button>
+<button id="btnVariable" class="tbtn" title="Variable" aria-label="Variable">
+  <!-- {x} icon -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+       viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+       stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 7c2 0 2 10 4 10"/>
+    <path d="M17 7c-2 0-2 10-4 10"/>
+    <path d="M10 12h4"/>
+  </svg>
+</button>
+
+
+      <button id="btnHr"              class="tbtn" title="Insert horizontal rule">―</button>
+    </div>
+  </div>
+
+  <div class="px-1 py-1 text-xs text-stone-500">Tip: select content, then apply styles.</div>
+</div>
+
+      </div>
+
+      <!-- Views -->
+      <section class="p-4 space-y-6">
+        <div id="viewWord">
+          <div class="text-sm text-stone-400 mb-1">Source (raw paste)</div>
+          <div id="wordInput" contenteditable="true" class="min-h-[160px] p-3 rounded-md border border-stone-800 bg-stone-950/40"></div>
+        </div>
+
+        <div id="viewHtml" class="hidden">
+          <div class="text-sm text-stone-400 mb-1">Clean HTML</div>
+          <textarea id="htmlEditor" spellcheck="false" class="w-full h-64 p-3 rounded-md border border-stone-800 bg-stone-950/40 font-mono"></textarea>
+        </div>
+
+        <div id="viewWysiwyg" class="">
+          <div class="text-sm text-stone-400 mb-1">WYSIWYG</div>
+          <div id="wysiwyg" contenteditable="true" class="prose prose-invert max-w-none min-h-[220px] p-3 rounded-md border border-stone-800 bg-stone-950/40"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Your export CSS for Save -->
+  <template id="export-css">/*-------------------------------------
+  1. General Typography
+-------------------------------------*/
+body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333; }
+/*-------------------------------------
+  2. Headings
+-------------------------------------*/
+h1 { font-size: 22px !important; font-weight: bold; margin-bottom: 10px; color: #222; }
+h2 { font-size: 18px !important; font-weight: bold; margin-top: 40px; margin-bottom: 8px; color: #333; }
+h3 { font-size: 16px !important; font-weight: bold; margin-top: 18px; margin-bottom: 6px; color: #444; }
+/*-------------------------------------
+  3. Paragraphs
+-------------------------------------*/
+p { margin-bottom: 12px; }
+/*-------------------------------------
+  4. Lists
+-------------------------------------*/
+ul, ol { margin-left: 20px; padding-left: 0; list-style-position: inside; }
+ul li, ol li { margin-bottom: 6px; position: relative; padding-left: 20px; text-indent: -20px; }
+ul li::marker, ol li::marker { font-weight: bold; }
+ul li br, ol li br { display: block; content: ""; margin-left: 20px; }
+/*-------------------------------------
+  5. Tables
+-------------------------------------*/
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, thead, td { border: 1px solid #ddd; padding: 8px; }
+th, thead { background-color: #f4f4f4; font-weight: bold; }
+/*-------------------------------------
+  6. Code Blocks
+-------------------------------------*/
+pre { background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; }
+/*-------------------------------------
+  7. Links
+-------------------------------------*/
+a { color: #0056b3; text-decoration: none; }
+a:hover { text-decoration: underline; }
+/*-------------------------------------
+  8. Callouts
+-------------------------------------*/
+.note, .warning, .example-block { padding: 1em; margin: 1em 0; font-family: sans-serif; white-space: normal; box-sizing: border-box; }
+.note { background-color: #f9f9f9; border-left: 4px solid #0073e6; }
+.warning { background-color: #fff3cd; border-left: 4px solid #ff9800; }
+.example-block { background-color: #f0f0f0; border-left: 4px solid #aaa; }
+li .note, li .warning, li .example-block { text-indent: 0; padding-left: 1em; margin-left: 0; display: block; }
+li > .note, li > .warning, li > .example-block { margin-top: 0.5em; }
+/*-------------------------------------
+  9. User Input Formatting
+-------------------------------------*/
+.user-input { font-family: Consolas, monospace; background-color: #e0e0e0; padding: 2px 4px; border-radius: 3px; color: #000; }
+.user-input .variable { font-style: italic; color: #333; }
+/*-------------------------------------
+  10. Screenshots
+-------------------------------------*/
+.screenshot { border: 1px solid #000; display: block; margin: 12px 0; max-width: 100%; height: auto; }
+/*-------------------------------------
+  11. DRAFT watermark
+-------------------------------------*/
+body.draft::before { content: "DRAFT"; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 6em; color: rgba(200,200,200,.2); z-index: 0; pointer-events: none; white-space: nowrap; }
+</template>
+
+  <textarea id="hiddenClipboard" class="sr-only" aria-hidden="true"></textarea>
+
+  <script>
+  // Ensure this file is served over HTTP(S) locally. File:// can block some APIs and event wiring.
+  window.addEventListener('DOMContentLoaded', () => {
+    const $ = id => document.getElementById(id);
+
+    // ---- State & Refs ----
+    let activeView = 'wysiwyg', cleanHTML = '';
+    const cssForExport = $('export-css').textContent.trim();
+    const wordInput = $('wordInput'), htmlEditor = $('htmlEditor'), wysiwyg = $('wysiwyg');
+    const statBytes = $('statBytes'), statWords = $('statWords'), badgeActive = $('badgeActive');
+
+    // ---- View switching ----
+    function setActiveView(view) {
+      activeView = view;
+
+      // Panels
+      $('viewWord').classList.toggle('hidden', view !== 'word');
+      $('viewHtml').classList.toggle('hidden', view !== 'html');
+      $('viewWysiwyg').classList.toggle('hidden', view !== 'wysiwyg');
+
+      // Toolbars
+      $('toolsWord').classList.toggle('hidden', view !== 'word');
+      $('toolsHtml').classList.toggle('hidden', view !== 'html');
+      $('toolsWysiwyg').classList.toggle('hidden', view !== 'wysiwyg');
+
+      // Rail highlight
+      const map = { word: 'navWord', html: 'navHtml', wysiwyg: 'navWysiwyg' };
+      ['navWord','navHtml','navWysiwyg'].forEach(id => { const el = $(id); if (el) el.classList.remove('rail-active'); });
+      const activeBtn = $(map[view]); if (activeBtn) activeBtn.classList.add('rail-active');
+
+      if (badgeActive) badgeActive.textContent = 'View: ' + (view === 'word' ? 'Word' : view === 'html' ? 'HTML' : 'WYSIWYG');
+    }
+
+    // ---- Stats ----
+    function updateStats(){
+      if (!statBytes || !statWords) return;
+      const html = cleanHTML || '';
+      const bytes = new Blob([html]).size;
+      const words = (html.replace(/<[^>]*>/g,' ').match(/\b\w+\b/g)||[]).length;
+      statBytes.textContent = bytes.toLocaleString();
+      statWords.textContent = words.toLocaleString();
+    }
+
+    // ---- Sync model -> editors ----
+    function setCleanHtml(html,{from}={from:'system'}) {
+      cleanHTML = html || '';
+      if (from !== 'html')    htmlEditor.value  = cleanHTML;
+      if (from !== 'wysiwyg') wysiwyg.innerHTML = cleanHTML || '';
+      updateStats();
+    }
+
+    // ---- Pretty printer (simple) ----
+    function prettyHtml(html) {
+      try {
+        const tab = '  ';
+        let result = '', indent = 0;
+        html.replace(/>\s+</g,'><').replace(/</g,'~::~<').split('~::~').forEach(node => {
+          if (/^<\//.test(node)) indent--;
+          result += tab.repeat(Math.max(indent,0)) + node + (/<\/?\w/.test(node) ? '\n' : '');
+          if (/^<\w[^>]*[^\/]>/.test(node) && !node.includes('<!')) indent++;
+        });
+        return result.trim();
+      } catch { return html; }
+    }
+
+    // ---- Clipboard & Save ----
+    async function copyActive(){
+      try{
+        if (activeView === 'html') {
+          await navigator.clipboard.writeText(htmlEditor.value);
+        } else if (activeView === 'wysiwyg') {
+          const html = wysiwyg.innerHTML;
+          const data = [new ClipboardItem({
+            'text/html': new Blob([html], {type:'text/html'}),
+            'text/plain': new Blob([html.replace(/<[^>]+>/g,'' )], {type:'text/plain'})
+          })];
+          await navigator.clipboard.write(data);
+        } else {
+          await navigator.clipboard.writeText(wordInput.innerHTML);
+        }
+      } catch {
+        const helper = $('hiddenClipboard');
+        helper.value = activeView==='html' ? htmlEditor.value : activeView==='wysiwyg' ? wysiwyg.innerHTML : wordInput.innerHTML;
+        helper.focus(); helper.select(); document.execCommand('copy');
+      }
+    }
+
+    function saveFile(){
+      const content = cleanHTML || wysiwyg.innerHTML || '';
+      const doc = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cleaned Content</title>
+<style>${cssForExport}</style></head><body>${content}</body></html>`;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([doc],{type:'text/html;charset=utf-8'}));
+      a.download = 'clean-content.html';
+      document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },0);
+    }
+
+    // ---- WYSIWYG helpers ----
+    function normalizeInline(){
+      // Replace <b>/<i> produced by execCommand with semantic tags
+      wysiwyg.querySelectorAll('b').forEach(b=>{ const s=document.createElement('strong'); while(b.firstChild) s.appendChild(b.firstChild); b.replaceWith(s); });
+      wysiwyg.querySelectorAll('i').forEach(i=>{ const e=document.createElement('em'); while(i.firstChild) e.appendChild(i.firstChild); i.replaceWith(e); });
+    }
+
+    function command(cmd, val=null){
+      document.execCommand(cmd, false, val);
+      normalizeInline();
+      setCleanHtml(wysiwyg.innerHTML, {from:'wysiwyg'});
+    }
+
+    function setBlockFormat(tag){
+  if (tag === 'pre') {
+    const sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
+    const r = sel.getRangeAt(0);
+    const pre = document.createElement('pre');
+    pre.textContent = r.toString();
+    r.deleteContents(); r.insertNode(pre);
+  } else if (tag === 'blockquote') {
+    document.execCommand('formatBlock', false, 'blockquote');
+  } else {
+    const blockArg = ('<' + tag.toUpperCase() + '>');    // e.g., <H2>
+    document.execCommand('formatBlock', false, blockArg);
+  }
+  setCleanHtml(wysiwyg.innerHTML, {from:'wysiwyg'});
+}
+// Unified Styles control
+const stylesSelect = $('stylesSelect');
+
+
+    function findBlockAncestor(node) {
+      while (node && node !== wysiwyg && !/^(P|DIV|LI|H1|H2|H3|H4|H5|H6|TD|TH|BLOCKQUOTE)$/.test(node.nodeName)) {
+        node = node.parentNode;
+      }
+      return node && node !== wysiwyg ? node : null;
+    }
+
+    function toggleCallout(cls){
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+
+  let node = sel.getRangeAt(0).commonAncestorContainer;
+  if (node.nodeType === 3) node = node.parentNode;
+
+  let block = findBlockAncestor(node);
+
+  // If we don't have a sensible block, wrap one so we can style it.
+  let createdWrapper = false;
+  if (!block) {
+    block = document.createElement('div');
+    // Insert wrapper around the selection's container
+    const r = sel.getRangeAt(0);
+    r.surroundContents(block);
+    createdWrapper = true;
+  } else if (!/^(P|DIV|LI|BLOCKQUOTE)$/.test(block.nodeName)) {
+    // We have a block, but it's not a good host; wrap it
+    const wrap = document.createElement('div');
+    block.replaceWith(wrap);
+    wrap.appendChild(block);
+    block = wrap;
+    createdWrapper = true;
+  }
+
+  const classes = ['note','warning','example-block'];
+
+  if (cls === 'remove') {
+    classes.forEach(c => block.classList.remove(c));
+
+    // If this block is just a naked wrapper with no attributes/classes, unwrap it.
+    if (
+      (block.nodeName === 'DIV' || block.nodeName === 'P') &&
+      !block.getAttributeNames().length &&
+      !block.classList.length &&
+      block.parentNode
+    ) {
+      while (block.firstChild) block.parentNode.insertBefore(block.firstChild, block);
+      block.parentNode.removeChild(block);
+    }
+  } else {
+    classes.forEach(c => block.classList.remove(c));
+    block.classList.add(cls);
+  }
+
+  setCleanHtml(wysiwyg.innerHTML, { from:'wysiwyg' });
+}
+
+    function applyScreenshot() {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      let node = sel.getRangeAt(0).commonAncestorContainer;
+      if (node.nodeType === 3) node = node.parentNode;
+      const img = node.closest ? node.closest('img') : null;
+      if (img) img.classList.add('screenshot');
+      setCleanHtml(wysiwyg.innerHTML, { from:'wysiwyg' });
+    }
+
+    function normalizeTable() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+
+  let node = sel.getRangeAt(0).commonAncestorContainer;
+  if (node.nodeType === 3) node = node.parentNode;
+
+  const table = node.closest ? node.closest('table') : null;
+  if (!table) return;
+
+  // Remove attributes on the table element itself (except span attrs)
+  [...table.attributes].forEach(a => {
+    if (!['rowspan','colspan'].includes(a.name)) table.removeAttribute(a.name);
+  });
+
+  // Clear inline styles on table explicitly (belt & suspenders)
+  if (table.getAttribute('style')) table.removeAttribute('style');
+
+  // Remove attributes on all descendants (except span attrs)
+  table.querySelectorAll('*').forEach(el => {
+    [...el.attributes].forEach(a => {
+      if (!['rowspan','colspan'].includes(a.name)) el.removeAttribute(a.name);
+    });
+  });
+
+  setCleanHtml(wysiwyg.innerHTML, { from:'wysiwyg' });
+}
+
+    function wrapUserInput() {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      const r = sel.getRangeAt(0);
+      const span = document.createElement('span');
+      span.className = 'user-input';
+      span.textContent = r.toString();
+      r.deleteContents(); r.insertNode(span);
+      setCleanHtml(wysiwyg.innerHTML, {from:'wysiwyg'});
+    }
+
+function unwrapNode(el) {
+  const parent = el.parentNode;
+  while (el.firstChild) parent.insertBefore(el.firstChild, el);
+  parent.removeChild(el);
+}
+
+function wrapVariable() {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+
+  const range = sel.getRangeAt(0);
+
+  // No selection: prompt and insert a variable token at the caret
+  if (sel.isCollapsed) {
+    const name = prompt('Variable name (e.g., USERNAME):');
+    if (!name) return;
+    const span = document.createElement('span');
+    span.className = 'variable';
+    span.textContent = name;
+    range.insertNode(span);
+
+    // Move caret after inserted span
+    const after = document.createRange();
+    after.setStartAfter(span);
+    after.collapse(true);
+    sel.removeAllRanges(); sel.addRange(after);
+
+    setCleanHtml(wysiwyg.innerHTML, { from:'wysiwyg' });
+    return;
+  }
+
+  // Selection exists
+  let container = range.commonAncestorContainer;
+  if (container.nodeType === 3) container = container.parentNode;
+
+  // If the selection is within an existing .variable, toggle it off (unwrap)
+  const existingVar = container.closest ? container.closest('span.variable') : null;
+  if (existingVar && range.intersectsNode(existingVar)) {
+    unwrapNode(existingVar);
+    setCleanHtml(wysiwyg.innerHTML, { from:'wysiwyg' });
+    return;
+  }
+
+  // Otherwise, wrap the selected text in <span class="variable">
+  // (Use delete+insert to avoid surroundContents() DOMException on partial nodes)
+  const text = range.toString();
+  const span = document.createElement('span');
+  span.className = 'variable';
+  span.textContent = text;
+
+  range.deleteContents();
+  range.insertNode(span);
+
+  // Place caret after the new span
+  const after = document.createRange();
+  after.setStartAfter(span);
+  after.collapse(true);
+  sel.removeAllRanges(); sel.addRange(after);
+
+  setCleanHtml(wysiwyg.innerHTML, { from:'wysiwyg' });
+}
+
+
+    // ---- Events ----
+    // View nav
+    $('navWord').addEventListener('click', ()=> setActiveView('word'));
+    $('navHtml').addEventListener('click', ()=> setActiveView('html'));
+    $('navWysiwyg').addEventListener('click', ()=> setActiveView('wysiwyg'));
+    $('btnVariable').addEventListener('click', wrapVariable);
+
+
+    // Global
+    $('btnCopy').addEventListener('click', copyActive);
+    $('btnSave').addEventListener('click', saveFile);
+
+    // Word tools
+    $('btnClean').addEventListener('click', ()=> { setCleanHtml(wordInput.innerHTML, {from:'system'}); setActiveView('wysiwyg'); });
+    $('btnClearAll').addEventListener('click', ()=> { wordInput.innerHTML=''; setCleanHtml('',{from:'system'}); htmlEditor.value=''; wysiwyg.innerHTML=''; updateStats(); });
+    $('btnPaste').addEventListener('click', async () => {
+      try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          if (item.types.includes('text/html')) {
+            const html = await (await item.getType('text/html')).text();
+            wordInput.innerHTML = html; return;
+          }
+        }
+        const text = await navigator.clipboard.readText();
+        wordInput.textContent = text;
+      } catch {}
+    });
+    $('wordInput').addEventListener('paste', (e) => {
+      const html = e.clipboardData.getData('text/html');
+      if (html) { e.preventDefault(); document.execCommand('insertHTML', false, html); }
+    });
+
+    // HTML tools
+    $('btnFormatHtml').addEventListener('click', ()=> {
+      const pretty = prettyHtml(htmlEditor.value);
+      htmlEditor.value = pretty;
+      setCleanHtml(pretty, {from:'html'});
+    });
+    htmlEditor.addEventListener('input', ()=> setCleanHtml(htmlEditor.value,{from:'html'}));
+
+    // WYSIWYG tools (inline)
+    document.querySelector('[data-action="bold"]').addEventListener('click', ()=> command('bold'));
+    document.querySelector('[data-action="italic"]').addEventListener('click', ()=> command('italic'));
+    document.querySelector('[data-action="underline"]').addEventListener('click', ()=> command('underline'));
+    document.querySelector('[data-action="strikeThrough"]').addEventListener('click', ()=> command('strikeThrough'));
+    document.querySelector('[data-action="subscript"]').addEventListener('click', ()=> command('subscript'));
+    document.querySelector('[data-action="superscript"]').addEventListener('click', ()=> command('superscript'));
+    document.querySelector('[data-action="link"]').addEventListener('click', ()=> { const url = prompt('Enter URL:'); if (url) command('createLink', url); });
+    document.querySelector('[data-action="unlink"]').addEventListener('click', ()=> command('unlink'));
+    document.querySelector('[data-action="removeFormat"]').addEventListener('click', ()=> command('removeFormat'));
+
+    // Lists / indent
+    $('btnUl').addEventListener('click', ()=> command('insertUnorderedList'));
+    $('btnOl').addEventListener('click', ()=> command('insertOrderedList'));
+    $('btnIndent').addEventListener('click', ()=> command('indent'));
+    $('btnOutdent').addEventListener('click', ()=> command('outdent'));
+
+    // Align
+    $('btnAlignLeft').addEventListener('click',   ()=> command('justifyLeft'));
+    $('btnAlignCenter').addEventListener('click', ()=> command('justifyCenter'));
+    $('btnAlignRight').addEventListener('click',  ()=> command('justifyRight'));
+    $('btnAlignJustify').addEventListener('click', ()=> command('justifyFull'));
+
+    // Media/table utilities
+    $('btnScreenshot').addEventListener('click', applyScreenshot);
+    $('btnNormalizeTable').addEventListener('click', normalizeTable);
+    $('btnUserInput').addEventListener('click', wrapUserInput);
+    $('btnHr').addEventListener('click', ()=> command('insertHorizontalRule'));
+
+    // Live sync from WYSIWYG
+    wysiwyg.addEventListener('input', ()=> setCleanHtml(wysiwyg.innerHTML,{from:'wysiwyg'}));
+
+    // Init
+    setCleanHtml('', {from:'system'});
+    setActiveView('wysiwyg');
+let lastRange = null;
+
+// Track selection changes inside the editor
+wysiwyg.addEventListener('mouseup',  cacheRange);
+wysiwyg.addEventListener('keyup',    cacheRange);
+wysiwyg.addEventListener('mouseleave', cacheRange);
+
+function cacheRange() {
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    lastRange = sel.getRangeAt(0);
+  }
+}
+
+function restoreRange() {
+  if (!lastRange) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(lastRange);
+}
+
+stylesSelect.addEventListener('change', (e) => {
+  restoreRange();                      // 🔸 make sure the editor selection is active
+
+  const v = e.target.value || '';
+  if (!v) return;
+
+  if (v.startsWith('block:')) {
+    const tag = v.split(':')[1];       // p, h1, h2, h3, pre, blockquote
+    setBlockFormat(tag);
+  } else if (v.startsWith('callout:')) {
+    const which = v.split(':')[1];     // note, warning, example-block, remove
+    toggleCallout(which);
+  }
+
+  stylesSelect.selectedIndex = 0;
+  wysiwyg.focus();                      // UX: return focus to editor
+});
+
+
+  });
+  </script>
+</body>
+</html>

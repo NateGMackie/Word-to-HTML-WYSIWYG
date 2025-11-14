@@ -1,0 +1,225 @@
+/*-------------------------------------
+  0. Scope – ONLY affect WYSIWYG content
+-------------------------------------*/
+
+#wysiwyg {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e5e7eb; /* light text for dark background */
+}
+
+/* Ensure nested elements inherit correctly */
+#wysiwyg * {
+  box-sizing: border-box;
+}
+
+/*-------------------------------------
+  2. Headings
+  (ported from your doc CSS, but scoped + slightly tweaked for dark UI)
+-------------------------------------*/
+
+#wysiwyg h1 {
+  font-size: 22px !important;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #f9fafb;
+}
+
+#wysiwyg h2 {
+  font-size: 18px !important;
+  font-weight: bold;
+  margin-top: 40px;
+  margin-bottom: 8px;
+  color: #e5e7eb;
+}
+
+#wysiwyg h3 {
+  font-size: 16px !important;
+  font-weight: bold;
+  margin-top: 18px;
+  margin-bottom: 6px;
+  color: #d4d4d8;
+}
+
+/*-------------------------------------
+  3. Paragraphs
+-------------------------------------*/
+
+#wysiwyg p {
+  margin-bottom: 12px;
+}
+
+/*-------------------------------------
+  4. Lists
+  (same structure as your ServiceNow-friendly CSS)
+-------------------------------------*/
+
+#wysiwyg ul,
+#wysiwyg ol {
+  margin-left: 20px;
+  padding-left: 0;
+  list-style-position: inside; /* Required by ServiceNow */
+}
+
+#wysiwyg ul li,
+#wysiwyg ol li {
+  margin-bottom: 6px;
+  position: relative;
+  padding-left: 20px;
+  text-indent: -20px; /* Creates hanging indent */
+}
+
+#wysiwyg ul li::marker,
+#wysiwyg ol li::marker {
+  font-weight: bold;
+}
+
+/* Fix line breaks in list items */
+#wysiwyg ul li br,
+#wysiwyg ol li br {
+  display: block;
+  content: "";
+  margin-left: 20px;
+}
+
+/*-------------------------------------
+  5. Tables
+-------------------------------------*/
+
+#wysiwyg table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+#wysiwyg th,
+#wysiwyg thead,
+#wysiwyg td {
+  border: 1px solid #4b5563;
+  padding: 8px;
+}
+
+#wysiwyg th,
+#wysiwyg thead {
+  background-color: #111827;
+  font-weight: bold;
+}
+
+/*-------------------------------------
+  6. Code Blocks
+-------------------------------------*/
+
+#wysiwyg pre {
+  background: #111827;
+  padding: 10px;
+  border-radius: 4px;
+  font-family: Consolas, Menlo, Monaco, monospace;
+  font-size: 13px;
+}
+
+/*-------------------------------------
+  7. Links
+-------------------------------------*/
+
+#wysiwyg a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+#wysiwyg a:hover {
+  text-decoration: underline;
+}
+
+/*-------------------------------------
+  8. Callouts (Note, Warning, Example)
+  (same semantics, colors nudged for dark background)
+-------------------------------------*/
+
+#wysiwyg .note,
+#wysiwyg .warning,
+#wysiwyg .example-block {
+  padding: 1em;
+  margin: 1em 0;
+  white-space: normal;
+  box-sizing: border-box;
+  border-radius: 4px;
+}
+
+#wysiwyg .note {
+  background-color: #0f172a;
+  border-left: 4px solid #3b82f6;
+}
+
+#wysiwyg .warning {
+  background-color: #43302b;
+  border-left: 4px solid #f97316;
+}
+
+#wysiwyg .example-block {
+  background-color: #111827;
+  border-left: 4px solid #9ca3af;
+}
+
+/* Adjust spacing/indentation inside lists */
+#wysiwyg li .note,
+#wysiwyg li .warning,
+#wysiwyg li .example-block {
+  text-indent: 0;
+  padding-left: 1em;
+  margin-left: 0;
+  display: block;
+}
+
+#wysiwyg li > .note,
+#wysiwyg li > .warning,
+#wysiwyg li > .example-block {
+  margin-top: 0.5em;
+}
+
+/*-------------------------------------
+  9. User Input Formatting
+-------------------------------------*/
+
+#wysiwyg .user-input {
+  font-family: Consolas, monospace;
+  background-color: #374151;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #f9fafb;
+}
+
+#wysiwyg .user-input .variable {
+  font-style: italic;
+  color: #e5e7eb;
+}
+
+/*-------------------------------------
+  10. Screenshots
+-------------------------------------*/
+
+#wysiwyg .screenshot {
+  border: 1px solid #9ca3af;
+  display: block;
+  margin: 12px 0;
+  max-width: 100%;
+  height: auto;
+}
+
+/*-------------------------------------
+  11. DRAFT watermark
+  (only applied if you explicitly add .draft to the editor)
+-------------------------------------*/
+
+#wysiwyg.draft::before {
+  content: "DRAFT";
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 4em;
+  color: rgba(148, 163, 184, 0.12);
+  z-index: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}

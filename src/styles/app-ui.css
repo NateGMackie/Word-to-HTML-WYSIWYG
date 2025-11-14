@@ -1,0 +1,49 @@
+/* Rail active state */
+.rail-active {
+  background-color: rgb(41 37 36 / 0.6) !important;
+  border-color: rgb(82 82 82) !important;
+  color: white !important;
+}
+
+/* Toolbar buttons */
+.tbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid rgb(41 37 36);
+  border-radius: 0.5rem;
+  color: #d6d3d1;
+}
+
+.tbtn:hover {
+  background: rgb(41 37 36 / 0.6);
+  border-color: #525252;
+  color: #fff;
+}
+
+/* Toolbar group container */
+.tb-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  border: 1px solid rgb(41 37 36);
+  border-radius: 0.75rem;
+  background: rgb(12 10 9 / 0.35);
+}
+
+/* Toolbar group label */
+.tb-title {
+  font-size: 0.70rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a8a29e;
+  margin-right: 0.25rem;
+  padding: 0 0.35rem;
+  border: 1px solid rgb(41 37 36);
+  border-radius: 0.375rem;
+  background: rgb(28 25 23 / 0.6);
+}
