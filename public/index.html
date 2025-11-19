@@ -180,164 +180,155 @@
         </div>
 
         <!-- WYSIWYG toolbar -->
-        <div id="toolsWysiwyg" class="hidden">
-          <div class="flex flex-wrap items-center gap-2">
-            <!-- Section 1: Font -->
-            <div class="tb-group">
-              <span class="tb-title">Font</span>
-              <button data-action="bold" class="tbtn" title="Bold">B</button>
-              <button data-action="italic" class="tbtn" title="Italic"><i>I</i></button>
-              <button data-action="underline" class="tbtn" title="Underline"><u>U</u></button>
-              <button data-action="strikeThrough" class="tbtn" title="Strikethrough">
-                <span style="text-decoration:line-through">S</span>
-              </button>
-              <button data-action="subscript" class="tbtn" title="Subscript">x<sub>2</sub></button>
-              <button data-action="superscript" class="tbtn" title="Superscript">x<sup>2</sup></button>
-              <button data-action="link" class="tbtn" title="Insert link">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M15 7h3a5 5 0 0 1 0 10h-3"/>
-                  <path d="M9 17H6A5 5 0 0 1 6 7h3"/>
-                  <path d="M8 12h8"/>
-                </svg>
-              </button>
-              <button data-action="unlink" class="tbtn" title="Remove link">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M15 7h3a5 5 0 0 1 0 10h-3"/>
-                  <path d="M9 17H6A5 5 0 0 1 6 7h3"/>
-                  <path d="M8 12h8"/>
-                  <path d="M4 4l3 3M17 17l3 3"/>
-                </svg>
-              </button>
-              <button data-action="removeFormat" class="tbtn" title="Remove formatting">⌫</button>
-            </div>
+<div id="toolsWysiwyg" class="hidden">
+  <div class="flex flex-wrap items-center gap-2">
 
-            <!-- Section 2: Paragraph -->
-            <div class="tb-group">
-              <span class="tb-title">Paragraph</span>
-              <button id="btnUl" class="tbtn" title="Bulleted list">•</button>
-              <button id="btnOl" class="tbtn" title="Numbered list">1.</button>
-              <button id="btnIndent" class="tbtn" title="Increase indent">→</button>
-              <button id="btnOutdent" class="tbtn" title="Decrease indent">←</button>
-              <button id="btnAlignLeft" class="tbtn" title="Align left">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="4" y1="6" x2="20" y2="6"/>
-                  <line x1="4" y1="10" x2="14" y2="10"/>
-                  <line x1="4" y1="14" x2="18" y2="14"/>
-                  <line x1="4" y1="18" x2="10" y2="18"/>
-                </svg>
-              </button>
-              <button id="btnAlignCenter" class="tbtn" title="Align center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="6" y1="6" x2="18" y2="6"/>
-                  <line x1="4" y1="10" x2="20" y2="10"/>
-                  <line x1="7" y1="14" x2="17" y2="14"/>
-                  <line x1="5" y1="18" x2="19" y2="18"/>
-                </svg>
-              </button>
-              <button id="btnAlignRight" class="tbtn" title="Align right">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="4" y1="6" x2="20" y2="6"/>
-                  <line x1="10" y1="10" x2="20" y2="10"/>
-                  <line x1="6" y1="14" x2="20" y2="14"/>
-                  <line x1="14" y1="18" x2="20" y2="18"/>
-                </svg>
-              </button>
-              <button id="btnAlignJustify" class="tbtn" title="Justify">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="4" y1="6" x2="20" y2="6"/>
-                  <line x1="4" y1="10" x2="20" y2="10"/>
-                  <line x1="4" y1="14" x2="20" y2="14"/>
-                  <line x1="4" y1="18" x2="20" y2="18"/>
-                </svg>
-              </button>
-            </div>
+    <!-- FONT tools -->
+    <button data-action="bold" class="tbtn" title="Bold">B</button>
+    <button data-action="italic" class="tbtn" title="Italic"><i>I</i></button>
+    <button data-action="underline" class="tbtn" title="Underline"><u>U</u></button>
+    <button data-action="strikeThrough" class="tbtn" title="Strikethrough">
+      <span style="text-decoration:line-through">S</span>
+    </button>
+    <button data-action="subscript" class="tbtn" title="Subscript">x<sub>2</sub></button>
+    <button data-action="superscript" class="tbtn" title="Superscript">x<sup>2</sup></button>
+    <button data-action="link" class="tbtn" title="Insert link">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path d="M15 7h3a5 5 0 0 1 0 10h-3"/>
+        <path d="M9 17H6A5 5 0 0 1 6 7h3"/>
+        <path d="M8 12h8"/>
+      </svg>
+    </button>
+    <button data-action="unlink" class="tbtn" title="Remove link">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path d="M15 7h3a5 5 0 0 1 0 10h-3"/>
+        <path d="M9 17H6A5 5 0 0 1 6 7h3"/>
+        <path d="M8 12h8"/>
+        <path d="M4 4l3 3M17 17l3 3"/>
+      </svg>
+    </button>
+    <button data-action="removeFormat" class="tbtn" title="Remove formatting">⌫</button>
 
-            <!-- Section 3: Styles -->
-            <div class="tb-group">
-              <span class="tb-title">Formatting</span>
-              <div class="relative">
-                <select id="stylesSelect" aria-label="Styles" title="Styles"
-                        class="appearance-none bg-stone-900/80 text-stone-200 text-sm px-3 py-1.5 pr-8 rounded-md border border-stone-800 hover:border-sky-500 focus:outline-none min-w-[12rem]">
-                  <!-- Placeholder (not a real value) -->
-                  <option value="" selected disabled>Inline / Callout...</option>
+    <!-- Divider -->
+    <div class="toolbar-divider"></div>
 
-                  <optgroup label="Block">
-                    <option value="block:p">Paragraph</option>
-                    <option value="block:h1">Heading 1</option>
-                    <option value="block:h2">Heading 2</option>
-                    <option value="block:h3">Heading 3</option>
-                    <option value="block:pre">Code Block</option>
-                    <option value="block:blockquote">Blockquote</option>
-                  </optgroup>
+    <!-- PARAGRAPH tools -->
+    <button id="btnUl" class="tbtn" title="Bulleted list">•</button>
+    <button id="btnOl" class="tbtn" title="Numbered list">1.</button>
+    <button id="btnIndent" class="tbtn" title="Increase indent">→</button>
+    <button id="btnOutdent" class="tbtn" title="Decrease indent">←</button>
+    <button id="btnAlignLeft" class="tbtn" title="Align left">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="4" y1="10" x2="14" y2="10"/>
+        <line x1="4" y1="14" x2="18" y2="14"/>
+        <line x1="4" y1="18" x2="10" y2="18"/>
+      </svg>
+    </button>
+    <button id="btnAlignCenter" class="tbtn" title="Align center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <line x1="6" y1="6" x2="18" y2="6"/>
+        <line x1="4" y1="10" x2="20" y2="10"/>
+        <line x1="7" y1="14" x2="17" y2="14"/>
+        <line x1="5" y1="18" x2="19" y2="18"/>
+      </svg>
+    </button>
+    <button id="btnAlignRight" class="tbtn" title="Align right">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="10" y1="10" x2="20" y2="10"/>
+        <line x1="6" y1="14" x2="20" y2="14"/>
+        <line x1="14" y1="18" x2="20" y2="18"/>
+      </svg>
+    </button>
+    <button id="btnAlignJustify" class="tbtn" title="Justify">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <line x1="4" y1="6" x2="20" y2="6"/>
+        <line x1="4" y1="10" x2="20" y2="10"/>
+        <line x1="4" y1="14" x2="20" y2="14"/>
+        <line x1="4" y1="18" x2="20" y2="18"/>
+      </svg>
+    </button>
 
-                  <optgroup label="Callouts">
-                    <option value="callout:note">Note</option>
-                    <option value="callout:warning">Warning</option>
-                    <option value="callout:example-block">Example</option>
-                    <option value="callout:remove">Remove callout</option>
-                  </optgroup>
-                </select>
+    <!-- Divider -->
+    <div class="toolbar-divider"></div>
 
-                <div class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
-                </div>
-              </div>
+    <!-- FORMAT & EXTRAS -->
+    <div class="relative">
+      <select id="stylesSelect" aria-label="Styles" title="Styles"
+              class="appearance-none bg-stone-900/80 text-stone-200 text-sm px-3 py-1.5 pr-8 rounded-md border border-stone-800 hover:border-sky-500 focus:outline-none min-w-[12rem]">
+        <option value="" selected disabled>Inline / Callout...</option>
+        <optgroup label="Block">
+          <option value="block:p">Paragraph</option>
+          <option value="block:h1">Heading 1</option>
+          <option value="block:h2">Heading 2</option>
+          <option value="block:h3">Heading 3</option>
+          <option value="block:pre">Code Block</option>
+          <option value="block:blockquote">Blockquote</option>
+        </optgroup>
+        <optgroup label="Callouts">
+          <option value="callout:note">Note</option>
+          <option value="callout:warning">Warning</option>
+          <option value="callout:example-block">Example</option>
+          <option value="callout:remove">Remove callout</option>
+        </optgroup>
+      </select>
 
-              <button id="btnScreenshot" class="tbtn" title="Mark screenshot">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M5 7h3l2-3h4l2 3h3"/>
-                  <path d="M2 7h20v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-              </button>
-              <button id="btnNormalizeTable" class="tbtn" title="Normalize table">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="5" width="18" height="14" rx="2"/>
-                  <path d="M3 10h18"/>
-                  <path d="M8 5v14"/>
-                  <path d="M16 5v14"/>
-                </svg>
-              </button>
-              <button id="btnUserInput" class="tbtn" title="Mark user input">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="7" width="18" height="10" rx="2"/>
-                  <path d="M6 11h12"/>
-                  <path d="M5 15h14"/>
-                </svg>
-              </button>
-              <button id="btnVariable" class="tbtn" title="Insert/Toggle variable">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
-                     stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M7 7c2 0 2 10 4 10"/>
-                  <path d="M17 7c-2 0-2 10-4 10"/>
-                  <path d="M10 12h4"/>
-                </svg>
-              </button>
-              <button id="btnHr" class="tbtn" title="Insert horizontal rule">―</button>
-            </div>
-          </div>
-        </div>
+      <div class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </div>
+    </div>
+
+    <button id="btnScreenshot" class="tbtn" title="Mark screenshot">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path d="M5 7h3l2-3h4l2 3h3"/>
+        <path d="M2 7h20v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </button>
+
+    <button id="btnNormalizeTable" class="tbtn" title="Normalize table">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="5" width="18" height="14" rx="2"/>
+        <path d="M3 10h18"/>
+        <path d="M8 5v14"/>
+        <path d="M16 5v14"/>
+      </svg>
+    </button>
+
+    <button id="btnUserInput" class="tbtn" title="Mark user input">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="7" width="18" height="10" rx="2"/>
+        <path d="M6 11h12"/>
+        <path d="M5 15h14"/>
+      </svg>
+    </button>
+
+    <button id="btnVariable" class="tbtn" title="Insert/Toggle variable">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path d="M7 7c2 0 2 10 4 10"/>
+        <path d="M17 7c-2 0-2 10-4 10"/>
+        <path d="M10 12h4"/>
+      </svg>
+    </button>
+
+    <button id="btnHr" class="tbtn" title="Insert horizontal rule">―</button>
+
+  </div>
+</div>
+
       </div>
 
       <!-- Views -->
@@ -350,7 +341,7 @@
         </div>
 
         <div id="viewHtml" class="hidden h-full flex flex-col p-1">
-          <div class="text-sm text-muted mb-1">Clean HTML</div>
+        
           <textarea id="htmlEditor"
                     spellcheck="false"
                     class="flex-1 min-h-0 w-full resize-none p-3 rounded-md border border-strong bg-panel font-mono overflow-auto"></textarea>

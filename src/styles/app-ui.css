@@ -3,14 +3,14 @@
    ================================ */
 
 :root {
-  /* Backgrounds */
-  --color-bg-app: #020617;              /* very dark slate (canvas) */
-  --color-bg-sidebar: #0b1120;          /* slightly lighter, cool sidebar */
-  --color-bg-chrome: #020617;           /* header/toolbars/footer band */
-  --color-bg-panel: #0f172a;            /* editor surfaces */
+  /* Backgrounds (all stone/gray now) */
+  --color-bg-app: #0c0a09;              /* stone-950 – darkest, app canvas */
+  --color-bg-sidebar: #1c1917;          /* stone-900 – dark gray sidebar */
+  --color-bg-chrome: #292524;           /* stone-800 – slightly lighter band for header/toolbars/footer */
+  --color-bg-panel: #0c0a09;            /* stone-950 – editors: almost black */
 
   /* Borders */
-  --color-border-strong: #1c1917;       /* stone-800 */
+  --color-border-strong: #1c1917;       /* stone-800-ish */
   --color-border-subtle: rgba(28, 25, 23, 0.8); /* stone-800/80 */
   --color-border-soft: rgba(28, 25, 23, 0.6);   /* stone-800/60 */
 
@@ -33,8 +33,8 @@
 
   /* Misc */
   --color-selection: rgba(59, 130, 246, 0.3); /* blue-500/30 */
-  --color-divider: #1c1917;                   /* stone-800 */
-  --color-menu-bg: #020617;                  /* chrome band */
+  --color-divider: #050403;                   /* darker than sidebar for contrast */
+  --color-menu-bg: #020202;                  /* match chrome band */
   --color-menu-row-hover: rgba(28, 25, 23, 0.8); /* stone-800/80 */
 }
 
@@ -188,6 +188,14 @@ body.theme-dark ::selection {
   color: #d6d3d1;
 }
 
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--color-divider);
+  margin: 0 4px;
+}
+
+
 .tbtn:hover {
   background: rgb(41 37 36 / 0.6);
   border-color: #525252;
@@ -226,71 +234,128 @@ body.theme-dark ::selection {
 }
 
 /* --------------------------
-   Light Theme
+   Light Theme (Updated)
 ---------------------------*/
 body.theme-light {
   color-scheme: light;
-  /* Canvas background (outside panels/editors) */
-  background-color: #e5e5e5 !important;  /* light gray */
-  color: #222 !important;
-}
 
-/* Tailwind dark backgrounds → canvas gray in light mode */
-body.theme-light .bg-stone-900,
-body.theme-light .bg-stone-900\/60,
-body.theme-light .bg-stone-950\/40 {
-  background-color: #e5e5e5 !important;
-  color: #222 !important;
-}
-
-/* Shared panel border color (nav, header, toolbar, footer, groups) */
-body.theme-light .border-stone-800,
-body.theme-light .border-stone-800\/80 {
-  border-color: #c4c4c4 !important;   /* medium-light gray border */
-}
-
-/* Panels: left nav, header, toolbars, footer */
-body.theme-light aside,
-body.theme-light .border-b.border-stone-800\/80,
-body.theme-light footer {
-  background-color: #dcdcdc !important;  /* panel surface gray */
-  color: #222 !important;
-}
-
-/* Editor area surfaces stay white */
-body.theme-light #wysiwyg,
-body.theme-light #wordInput,
-body.theme-light #htmlEditor {
+  /* App canvas, outside panels */
   background-color: #ffffff !important;
+  color: #222 !important;
+}
+
+/* Sidebar */
+body.theme-light .bg-sidebar {
+  background-color: #E8EAED !important;  /* darker light gray */
+  color: #222 !important;
+  border-color: #D0D0D5 !important;
+}
+
+body.theme-light .bg-divider {
+  background-color: #D0D0D5 !important; /* subtle light gray divider */
+}
+
+body.theme-light .rail-active {
+  background-color: #babcc0 !important; /* rgba(228,230,234,1) */
+  border-color: #BFC1C5 !important;
   color: #111 !important;
 }
 
-/* Toolbar group (WYSIWYG groups) – use same panel-ish gray + border */
-body.theme-light .tb-group {
-  border-color: #c4c4c4 !important;
-  background: #e4e4e4 !important;  /* slightly lighter than panels so it pops */
+/* Light Theme – keep blue hover for sidebar/view buttons */
+body.theme-light .btn-rail:hover {
+  background-color: var(--color-accent-bg-hover) !important;
+  border-color: var(--color-accent-border-hover) !important;
+  color: var(--color-accent-text-hover) !important;
 }
 
-/* Buttons & selects */
-body.theme-light .tbtn,
+/* Header / Toolbar / Footer / Menu */
+body.theme-light .bg-chrome,
+body.theme-light header,
+body.theme-light footer,
+body.theme-light .border-b.border-subtle,
+body.theme-light .menu-panel {
+  background-color: #F6F6F8 !important;   /* light gray */
+  color: #222 !important;
+  border-color: #D0D0D5 !important;       /* subtle medium border */
+}
+
+body.theme-light #badgeActive {
+  border-color: #D0D0D5 !important; /* soft neutral border */
+}
+
+/* Light Theme – Semantic text overrides */
+body.theme-light .text-primary,
+body.theme-light .text-secondary,
+body.theme-light .text-muted,
+body.theme-light .text-quiet {
+  color: #222 !important; /* readable dark text */
+}
+
+
+/* Editors */
+body.theme-light .bg-panel,
+body.theme-light #wysiwyg,
+body.theme-light #wordInput,
+body.theme-light #htmlEditor {
+  background-color: #ffffff !important;   /* white */
+  color: #222 !important;
+  border-color: #D0D0D5 !important;
+}
+
+/* Light Theme – keep blue hover for accent buttons (Paste, Clean, Pretty) */
+body.theme-light .btn-accent:hover {
+  background-color: var(--color-accent-bg-hover) !important;
+  border-color: var(--color-accent-border-hover) !important;
+  color: var(--color-accent-text-hover) !important;
+}
+
+/* Light Theme – keep red hover for danger button (Reset) */
+body.theme-light .btn-danger:hover {
+  background-color: var(--color-danger-bg-hover) !important;
+  border-color: var(--color-danger-border-hover) !important;
+  color: var(--color-danger-text-hover) !important;
+}
+
+
+/* Toolbar groups */
+body.theme-light .tb-group {
+  background-color: #F6F6F8 !important;
+  border-color: #D0D0D5 !important;
+}
+
+body.theme-light .tb-title {
+  background-color: #E8EAED !important;
+  border-color: #D0D0D5 !important;
+  color: #555 !important;
+}
+
+/* Buttons & selects (general UI) */
 body.theme-light button,
-body.theme-light select {
-  background-color: #f5f5f5;
-  border-color: #c4c4c4;
+body.theme-light select,
+body.theme-light .tbtn {
+  background-color: #ffffff;
+  border-color: #C4C4C4;
   color: #222;
 }
 
-body.theme-light .tbtn:hover{
-  background-color: #e2e2e2;
+body.theme-light button:hover,
+body.theme-light .tbtn:hover {
+  background-color: #E8EAED;
+}
+body.theme-light .toolbar-divider {
+  background-color: #D0D0D5 !important;
 }
 
-/* Dropdown panel */
-body.theme-light #menuPanel {
-  background-color: #f5f5f5;
-  border-color: #c4c4c4;
+/* Menu items */
+body.theme-light .menu-item {
+  border-top-color: #D0D0D5 !important;
 }
 
-/* Make all the "stone" text colors readable on light */
+body.theme-light .menu-item:hover {
+  background-color: #E8EAED !important;
+}
+
+/* Fix stone text colors so they don't disappear */
 body.theme-light .text-stone-100,
 body.theme-light .text-stone-200,
 body.theme-light .text-stone-300,
@@ -298,3 +363,4 @@ body.theme-light .text-stone-400,
 body.theme-light .text-stone-500 {
   color: #222 !important;
 }
+
