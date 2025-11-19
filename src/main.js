@@ -20,9 +20,39 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnCopy = $('btnCopy');
   const btnSave = $('btnSave');
 
+  if (menuSave && btnSave && menuPanel) {
+  menuSave.addEventListener('click', () => {
+    btnSave.click();      // trigger your existing save logic
+    menuPanel.classList.add('hidden'); // close menu
+  });
+}
+
+const btnThemeToggle = document.getElementById('btnThemeToggle');
+const body = document.body;
+
+if (btnThemeToggle) {
+  btnThemeToggle.addEventListener('click', () => {
+    const isDark = body.classList.toggle('theme-light'); 
+    // If theme-light is ON, switch label
+    btnThemeToggle.textContent = body.classList.contains('theme-light')
+      ? 'LIGHT'
+      : 'DARK';
+  });
+}
+
   const btnPaste = $('btnPaste');
   const btnClean = $('btnClean');
-  const btnClearAll = $('btnClearAll');
+
+  const menuNew = document.getElementById('menuNew');
+const btnClearAll = document.getElementById('btnClearAll');
+
+if (menuNew && btnClearAll && menuPanel) {
+  menuNew.addEventListener('click', () => {
+    btnClearAll.click();          // reuse existing reset behavior
+    menuPanel.classList.add('hidden');  // close the menu
+  });
+}
+
   const btnFormatHtml = $('btnFormatHtml');
 
   const toolsWord = $('toolsWord');
@@ -36,6 +66,21 @@ window.addEventListener('DOMContentLoaded', () => {
   const navWord = $('navWord');
   const navHtml = $('navHtml');
   const navWysiwyg = $('navWysiwyg');
+
+  if (btnMenu && menuPanel) {
+  btnMenu.addEventListener('click', () => {
+    menuPanel.classList.toggle('hidden');
+  });
+}
+
+if (menuImport && navWord && menuPanel) {
+  menuImport.addEventListener('click', () => {
+    // Reuse existing logic for switching to Word view
+    navWord.click();
+    // Close the menu
+    menuPanel.classList.add('hidden');
+  });
+}
 
   const stylesSelect = $('stylesSelect');
   const btnScreenshot = $('btnScreenshot');
@@ -56,6 +101,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnAlignCenter = $('btnAlignCenter');
   const btnAlignRight = $('btnAlignRight');
   const btnAlignJustify = $('btnAlignJustify');
+
+  
 
   // ---- Document state ----
   const docState = createDocState({ htmlEditor, wysiwyg, statBytes, statWords });

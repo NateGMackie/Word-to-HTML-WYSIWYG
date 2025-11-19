@@ -93,6 +93,130 @@ function normalizeInlineFormatting(doc) {
   });
 }
 
+// ===== Extra normalization for modern Word / Word Online HTML =====
+
+// 1) Turn <p role="heading" aria-level="1"> into <h1>, etc.
+function normalizeWordOnlineHeadings(doc) {
+  doc.querySelectorAll('p[role="heading"][aria-level]').forEach((p) => {
+    const level = parseInt(p.getAttribute("aria-level"), 10);
+    if (!level || level < 1 || level > 6) return;
+
+    const h = doc.createElement("h" + level);
+    h.innerHTML = p.innerHTML;
+    p.replaceWith(h);
+  });
+}
+
+// 2) Flatten wrapper divs that Word Online loves to sprinkle everywhere
+function flattenWordOnlineWrappers(doc) {
+  const selectors = [
+    "div.OutlineElement",
+    "div.ListContainerWrapper",
+    "div.TableContainer",
+    "div.TableCellContent",
+  ];
+
+  doc.querySelectorAll(selectors.join(",")).forEach((wrapper) => {
+    const parent = wrapper.parentNode;
+    if (!parent) return;
+    while (wrapper.firstChild) {
+      parent.insertBefore(wrapper.firstChild, wrapper);
+    }
+    wrapper.remove();
+  });
+}
+
+// 3) Strip non-content attributes (classes, inline styles, data-*, etc.)
+//    but KEEP things that matter for content: href, src, alt, colspan, etc.
+function stripNonContentAttributes(doc) {
+  const keep = new Set([
+    "href",
+    "src",
+    "alt",
+    "colspan",
+    "rowspan",
+    "scope",
+    "title",
+    "target",
+    "start",
+    "type",
+  ]);
+
+  doc.querySelectorAll("*").forEach((el) => {
+    Array.from(el.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (!keep.has(name)) {
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+}
+
+// 4) After attributes are stripped, a ton of <span> wrappers become useless.
+//    Unwrap <span> elements that have no attributes.
+function unwrapEmptySpans(doc) {
+  doc.querySelectorAll("span").forEach((span) => {
+    if (span.attributes.length === 0) {
+      const parent = span.parentNode;
+      if (!parent) return;
+      while (span.firstChild) {
+        parent.insertBefore(span.firstChild, span);
+      }
+      span.remove();
+    }
+  });
+}
+
+// 5) Kill empty paragraphs that just contain &nbsp; / whitespace.
+function removeEmptyParagraphs(doc) {
+  doc.querySelectorAll("p").forEach((p) => {
+    const text = (p.textContent || "").replace(/\u00A0/g, " ").trim();
+    if (!text && !p.querySelector("img, table, ul, ol")) {
+      p.remove();
+    }
+  });
+}
+
+// Turn Word/Word Online style-based formatting into semantic tags
+function applyInlineStyleFormatting(doc) {
+  doc.querySelectorAll('span[style]').forEach(span => {
+    let style = (span.getAttribute('style') || '').toLowerCase();
+    if (!style) return;
+
+    const isBold = /font-weight\s*:\s*(bold|[7-9]00)/.test(style);
+    const isItalic = /font-style\s*:\s*italic/.test(style);
+    const hasUnderline = /text-decoration[^;]*underline/.test(style);
+    const hasStrike = /text-decoration[^;]*(line-through|strikethrough)/.test(style);
+    const isSup = /vertical-align\s*:\s*(super|superscript)/.test(style);
+    const isSub = /vertical-align\s*:\s*sub/.test(style);
+
+    if (!(isBold || isItalic || hasUnderline || hasStrike || isSup || isSub)) return;
+
+    let node = span;
+
+    const wrap = (tagName) => {
+      const wrapper = doc.createElement(tagName);
+      // move contents into wrapper
+      while (node.firstChild) {
+        wrapper.appendChild(node.firstChild);
+      }
+      // replace current node with wrapper
+      node.parentNode.insertBefore(wrapper, node);
+      node.remove();
+      node = wrapper;
+    };
+
+    // Order doesn’t hugely matter, but this reads well
+    if (isBold)       wrap('strong');
+    if (isItalic)     wrap('em');
+    if (hasUnderline) wrap('u');
+    if (hasStrike)    wrap('s');
+    if (isSup)        wrap('sup');
+    if (isSub)        wrap('sub');
+  });
+}
+
+
 // Remove Word's Mso* classes and mso-* inline styles (run AFTER list/heading detection!)
 function removeMsoStyling(doc) {
   doc.querySelectorAll("[class]").forEach((el) => {
@@ -263,6 +387,123 @@ function stripListMarkersDOM(p) {
 
   return p.innerHTML.trim();
 }
+
+function unwrapParasInListItems(doc) {
+  doc.querySelectorAll('li > p:first-child').forEach(p => {
+    const li = p.parentElement;
+    if (!li) return;
+
+    // If the <p> contains block-level elements, leave it alone.
+    const hasBlockChild = Array.from(p.children).some(child =>
+      ["P", "DIV", "UL", "OL", "TABLE"].includes(child.tagName)
+    );
+    if (hasBlockChild) return;
+
+    // Insert the <p>'s contents directly into the <li>,
+    // before whatever comes after the <p> (e.g., a nested <ol>).
+    const refNode = p.nextSibling; // may be a nested <ol>/<ul> or null
+    while (p.firstChild) {
+      li.insertBefore(p.firstChild, refNode);
+    }
+    p.remove();
+  });
+}
+
+
+// Normalize Word Online lists (<ol>/<ul> with data-listid + data-aria-level)
+// into a single semantic list with proper nesting.
+function normalizeWordOnlineLists(doc) {
+  const root = doc.body;
+  let node = root.firstElementChild;
+
+  while (node) {
+    const tag = node.tagName;
+    if (tag !== "OL" && tag !== "UL") {
+      node = node.nextElementSibling;
+      continue;
+    }
+
+    // Look for a listId on the first <li>
+    const firstLi = node.querySelector("li");
+    const listId = firstLi && firstLi.getAttribute("data-listid");
+    if (!listId) {
+      node = node.nextElementSibling;
+      continue;
+    }
+
+    // Collect this list and any immediately following sibling lists
+    // that share the same tag and listId (Word Online = same logical list).
+    const lists = [node];
+    let cursor = node.nextElementSibling;
+    while (cursor && cursor.tagName === tag) {
+      const li = cursor.querySelector("li");
+      const cursorListId = li && li.getAttribute("data-listid");
+      if (cursorListId !== listId) break;
+      lists.push(cursor);
+      cursor = cursor.nextElementSibling;
+    }
+
+    // If there's only one list, we still might want to normalize nesting,
+    // but for now we only bother when there are multiple segments.
+    if (lists.length > 1) {
+      const combined = doc.createElement(tag);
+
+      // Stack of lists by level; index = level - 1
+      const listStack = [combined];
+
+      const ensureLevel = (level) => {
+        if (level < 1) level = 1;
+
+        // Grow: create nested lists as needed
+        while (listStack.length < level) {
+          const parentList = listStack[listStack.length - 1];
+          const parentLi = parentList.lastElementChild;
+          if (!parentLi) break; // can't nest yet if there's no parent <li>
+
+          const newList = doc.createElement(tag);
+          parentLi.appendChild(newList);
+          listStack.push(newList);
+        }
+
+        // Shrink: pop back to the requested level
+        while (listStack.length > level) {
+          listStack.pop();
+        }
+      };
+
+      // Walk all lis in DOM order across the sequence
+      lists.forEach((ol) => {
+        Array.from(ol.children).forEach((li) => {
+          if (li.tagName !== "LI") return;
+
+          const levelAttr =
+            li.getAttribute("data-aria-level") ||
+            li.getAttribute("aria-level");
+
+          let level = parseInt(levelAttr || "1", 10);
+          if (!Number.isFinite(level) || level < 1) level = 1;
+
+          ensureLevel(level);
+
+          const currentList = listStack[level - 1];
+          currentList.appendChild(li); // Move <li> into the combined structure
+        });
+      });
+
+      // Insert combined list before the first original list
+      root.insertBefore(combined, node);
+
+      // Remove the original segmented lists
+      lists.forEach((l) => l.remove());
+
+      // Continue from the combined structure
+      node = combined;
+    }
+
+    node = node.nextElementSibling;
+  }
+}
+
 
 function convertListsInDoc(doc) {
   const root = doc.body;
@@ -457,6 +698,17 @@ function mergeAdjacentLists(doc) {
   }
 }
 
+function normalizeListStarts(doc) {
+  doc.querySelectorAll('ol[start]').forEach(ol => {
+    // if the start is 1, we don’t really need it
+    const start = parseInt(ol.getAttribute('start'), 10);
+    if (!Number.isNaN(start) && start === 1) {
+      ol.removeAttribute('start');
+    }
+  });
+}
+
+
 function stripTableBorders(doc) {
   doc.querySelectorAll("table").forEach((tbl) => tbl.removeAttribute("border"));
 }
@@ -470,18 +722,37 @@ function serialize(doc) {
 export function cleanHTML(inputHTML) {
   const doc = parseHTML(inputHTML || "");
 
+  // 1) Strip obviously unsafe/noisy stuff
   removeHtmlComments(doc);
   removeOfficeNamespaces(doc);
   removeDangerousNodes(doc);
 
-  convertMsoHeadings(doc);     // keep Mso* to detect headings
-  convertListsInDoc(doc);      // build lists while mso-list/margins still present
+  // 2) Word Online / structural cleanup
+  flattenWordOnlineWrappers(doc);
+  normalizeWordOnlineHeadings(doc);   // <p role="heading"> → <h1>…<h6>
+  normalizeWordOnlineLists(doc);      // 👈 NEW: use data-listid + level info
+
+  // 3) Headings and lists (classic Word HTML)
+  convertMsoHeadings(doc);            // legacy MsoHeading1 → <h1>
+  convertListsInDoc(doc);             // Word-style <p> bullets → <ul>/<ol><li>
   mergeAdjacentLists(doc);
+  normalizeListStarts(doc);           // drop start="1" etc.
 
+  // 4) Word comments and inline styles
   removeWordComments(doc);
-  removeMsoStyling(doc);       // NOW strip Mso* classes & mso-* styles
+  applyInlineStyleFormatting(doc);    // span[style] → <strong>/<em>/<u>/<s>/<sup>/<sub>
+  removeMsoStyling(doc);              // strip mso-* rules/classes
 
-  normalizeInlineFormatting(doc);
+  // 5) Generic normalization / attribute slimming
+  stripNonContentAttributes(doc);     // keep href/src/alt/colspan/... only
+  unwrapEmptySpans(doc);              // span with no attributes → unwrap
+  removeEmptyParagraphs(doc);         // nukes &nbsp;/whitespace-only <p>s
+
+  normalizeInlineFormatting(doc);     // legacy <b>/<i> → <strong>/<em>
   stripTableBorders(doc);
+  unwrapParasInListItems(doc);        // <li><p>foo</p></li> → <li>foo</li>
+
   return serialize(doc);
 }
+
+

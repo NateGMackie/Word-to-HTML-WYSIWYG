@@ -1,3 +1,174 @@
+/* ================================
+   Theme tokens – Dark (default)
+   ================================ */
+
+:root {
+  /* Backgrounds */
+  --color-bg-app: #020617;              /* very dark slate (canvas) */
+  --color-bg-sidebar: #0b1120;          /* slightly lighter, cool sidebar */
+  --color-bg-chrome: #020617;           /* header/toolbars/footer band */
+  --color-bg-panel: #0f172a;            /* editor surfaces */
+
+  /* Borders */
+  --color-border-strong: #1c1917;       /* stone-800 */
+  --color-border-subtle: rgba(28, 25, 23, 0.8); /* stone-800/80 */
+  --color-border-soft: rgba(28, 25, 23, 0.6);   /* stone-800/60 */
+
+  /* Text */
+  --color-text-primary: #f5f5f4;        /* stone-100 */
+  --color-text-secondary: #d6d3d1;      /* stone-300 */
+  --color-text-muted: #a8a29e;          /* stone-400 */
+  --color-text-quiet: #78716c;          /* stone-500 */
+
+  /* Accent (sky) */
+  --color-accent-border-hover: #0ea5e9; /* sky-500 */
+  --color-accent-bg-hover: #0369a1;     /* sky-700 */
+  --color-accent-text-hover: #ffffff;
+
+  /* Danger */
+  --color-danger-text-hover: #fecaca;   /* red-200 */
+  --color-danger-border-hover: #ef4444; /* red-500 */
+  --color-danger-bg-hover: #b91c1c;     /* red-700 */
+  --color-danger-focus-ring: rgba(239, 68, 68, 0.4); /* red-500/40 */
+
+  /* Misc */
+  --color-selection: rgba(59, 130, 246, 0.3); /* blue-500/30 */
+  --color-divider: #1c1917;                   /* stone-800 */
+  --color-menu-bg: #020617;                  /* chrome band */
+  --color-menu-row-hover: rgba(28, 25, 23, 0.8); /* stone-800/80 */
+}
+
+/* Hook body into theme – dark is default */
+body.theme-dark {
+  background-color: var(--color-bg-app);
+  color: var(--color-text-primary);
+}
+
+/* Global selection color */
+body.theme-dark ::selection {
+  background-color: var(--color-selection);
+}
+
+/* Semantic background helpers */
+.bg-app {
+  background-color: var(--color-bg-app);
+}
+
+.bg-sidebar {
+  background-color: var(--color-bg-sidebar);
+  backdrop-filter: blur(12px);
+}
+
+.bg-chrome {
+  background-color: var(--color-bg-chrome);
+}
+
+.bg-panel {
+  background-color: var(--color-bg-panel);
+}
+
+/* Semantic text colors */
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.text-quiet {
+  color: var(--color-text-quiet);
+}
+
+/* Semantic borders */
+.border-strong {
+  border-color: var(--color-border-strong);
+}
+
+.border-subtle {
+  border-color: var(--color-border-subtle);
+}
+
+.border-soft {
+  border-color: var(--color-border-soft);
+}
+
+/* Divider background */
+.bg-divider {
+  background-color: var(--color-divider);
+}
+
+/* Rail buttons (left sidebar) */
+.btn-rail {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-secondary);
+  border-radius: 0.5rem;
+  display: grid;
+  place-items: center;
+}
+
+.btn-rail:hover {
+  color: var(--color-accent-text-hover);
+  border-color: var(--color-accent-border-hover);
+  background-color: var(--color-accent-bg-hover);
+}
+
+/* Generic accent button (Paste, Clean, Pretty) */
+.btn-accent {
+  border: 1px solid var(--color-border-strong);
+}
+
+.btn-accent:hover {
+  border-color: var(--color-accent-border-hover);
+  background-color: var(--color-accent-bg-hover);
+}
+
+/* Menu panel + items */
+.menu-panel {
+  background-color: var(--color-menu-bg);
+  border: 1px solid var(--color-border-strong);
+}
+
+.menu-item {
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.menu-item:hover {
+  background-color: var(--color-menu-row-hover);
+}
+
+/* Dangerous button (Reset) */
+.btn-danger {
+  border: 1px solid var(--color-border-strong);
+}
+
+.btn-danger:hover {
+  color: var(--color-danger-text-hover);
+  border-color: var(--color-danger-border-hover);
+  background-color: var(--color-danger-bg-hover);
+}
+
+.btn-danger:focus-visible {
+  outline: 2px solid var(--color-danger-focus-ring);
+  outline-offset: 1px;
+}
+
+/* Theme toggle button – softer accent */
+.btn-theme {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+
+.btn-theme:hover {
+  color: var(--color-accent-text-hover);
+  border-color: var(--color-accent-border-hover);
+  background-color: rgba(28, 25, 23, 0.5); /* stone-800/50-ish */
+}
+
 /* Rail active state */
 .rail-active {
   background-color: rgb(41 37 36 / 0.6) !important;
@@ -46,4 +217,84 @@
   border: 1px solid rgb(41 37 36);
   border-radius: 0.375rem;
   background: rgb(28 25 23 / 0.6);
+}
+
+#wordInput:focus,
+#htmlEditor:focus,
+#wysiwyg:focus {
+  outline: 1px solid #888 !important;
+}
+
+/* --------------------------
+   Light Theme
+---------------------------*/
+body.theme-light {
+  color-scheme: light;
+  /* Canvas background (outside panels/editors) */
+  background-color: #e5e5e5 !important;  /* light gray */
+  color: #222 !important;
+}
+
+/* Tailwind dark backgrounds → canvas gray in light mode */
+body.theme-light .bg-stone-900,
+body.theme-light .bg-stone-900\/60,
+body.theme-light .bg-stone-950\/40 {
+  background-color: #e5e5e5 !important;
+  color: #222 !important;
+}
+
+/* Shared panel border color (nav, header, toolbar, footer, groups) */
+body.theme-light .border-stone-800,
+body.theme-light .border-stone-800\/80 {
+  border-color: #c4c4c4 !important;   /* medium-light gray border */
+}
+
+/* Panels: left nav, header, toolbars, footer */
+body.theme-light aside,
+body.theme-light .border-b.border-stone-800\/80,
+body.theme-light footer {
+  background-color: #dcdcdc !important;  /* panel surface gray */
+  color: #222 !important;
+}
+
+/* Editor area surfaces stay white */
+body.theme-light #wysiwyg,
+body.theme-light #wordInput,
+body.theme-light #htmlEditor {
+  background-color: #ffffff !important;
+  color: #111 !important;
+}
+
+/* Toolbar group (WYSIWYG groups) – use same panel-ish gray + border */
+body.theme-light .tb-group {
+  border-color: #c4c4c4 !important;
+  background: #e4e4e4 !important;  /* slightly lighter than panels so it pops */
+}
+
+/* Buttons & selects */
+body.theme-light .tbtn,
+body.theme-light button,
+body.theme-light select {
+  background-color: #f5f5f5;
+  border-color: #c4c4c4;
+  color: #222;
+}
+
+body.theme-light .tbtn:hover{
+  background-color: #e2e2e2;
+}
+
+/* Dropdown panel */
+body.theme-light #menuPanel {
+  background-color: #f5f5f5;
+  border-color: #c4c4c4;
+}
+
+/* Make all the "stone" text colors readable on light */
+body.theme-light .text-stone-100,
+body.theme-light .text-stone-200,
+body.theme-light .text-stone-300,
+body.theme-light .text-stone-400,
+body.theme-light .text-stone-500 {
+  color: #222 !important;
 }
