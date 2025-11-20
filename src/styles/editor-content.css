@@ -136,9 +136,7 @@
   (same semantics, colors nudged for dark background)
 -------------------------------------*/
 
-#wysiwyg .note,
-#wysiwyg .warning,
-#wysiwyg .example-block {
+#wysiwyg .callout {
   padding: 1em;
   margin: 1em 0;
   white-space: normal;
@@ -146,25 +144,23 @@
   border-radius: 4px;
 }
 
-#wysiwyg .note {
+#wysiwyg .callout.note {
   background-color: #0f172a;
   border-left: 4px solid #3b82f6;
 }
 
-#wysiwyg .warning {
+#wysiwyg .callout.warning {
   background-color: #43302b;
   border-left: 4px solid #f97316;
 }
 
-#wysiwyg .example-block {
+#wysiwyg .callout.example-block {
   background-color: #111827;
   border-left: 4px solid #9ca3af;
 }
 
 /* Adjust spacing/indentation inside lists */
-#wysiwyg li .note,
-#wysiwyg li .warning,
-#wysiwyg li .example-block {
+#wysiwyg li .callout {
   text-indent: 0;
   padding-left: 1em;
   margin-left: 0;

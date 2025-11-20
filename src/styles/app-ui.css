@@ -227,6 +227,7 @@ body.theme-dark ::selection {
   background: rgb(28 25 23 / 0.6);
 }
 
+
 #wordInput:focus,
 #htmlEditor:focus,
 #wysiwyg:focus {

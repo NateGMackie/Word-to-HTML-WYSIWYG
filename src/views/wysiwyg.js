@@ -12,6 +12,13 @@ export function initWysiwygView({ elements, docState }) {
 
   if (!wysiwyg) return;
 
+  // Prefer <p> as the default block when pressing Enter (where supported)
+  try {
+    document.execCommand('defaultParagraphSeparator', false, 'p');
+  } catch (e) {
+    // Some browsers ignore this; that's fine.
+  }
+
   // ---- Inline normalization ----
   function normalizeInline() {
     wysiwyg.querySelectorAll('b').forEach((b) => {
@@ -26,9 +33,26 @@ export function initWysiwygView({ elements, docState }) {
     });
   }
 
+  // ---- Block normalization ----
+  function normalizeBlocks() {
+    // Normalize top-level children of the wysiwyg root
+    Array.from(wysiwyg.children).forEach((el) => {
+      // Convert non-callout <div> blocks to <p>
+      if (
+        el.nodeName === 'DIV' &&
+        !el.classList.contains('callout') // keep our callout containers as <div>
+      ) {
+        const p = document.createElement('p');
+        while (el.firstChild) p.appendChild(el.firstChild);
+        el.replaceWith(p);
+      }
+    });
+  }
+
   function command(cmd, val = null) {
     document.execCommand(cmd, false, val);
     normalizeInline();
+    normalizeBlocks();
     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   }
 
@@ -44,12 +68,26 @@ export function initWysiwygView({ elements, docState }) {
       r.insertNode(pre);
     } else if (tag === 'blockquote') {
       document.execCommand('formatBlock', false, 'blockquote');
+
+      // Normalize: no <p> wrappers inside blockquotes
+      wysiwyg.querySelectorAll('blockquote').forEach((bq) => {
+        bq.querySelectorAll('p').forEach((p) => {
+          unwrapNode(p);
+        });
+      });
     } else {
       const blockArg = `<${tag.toUpperCase()}>`;
       document.execCommand('formatBlock', false, blockArg);
     }
+
+    normalizeBlocks();
     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   }
+
+  // Enter handling:
+
+
+
 
   function findBlockAncestor(node) {
     while (
@@ -66,42 +104,112 @@ export function initWysiwygView({ elements, docState }) {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
 
-    let node = sel.getRangeAt(0).commonAncestorContainer;
+    const range = sel.getRangeAt(0);
+    let node = range.commonAncestorContainer;
     if (node.nodeType === 3) node = node.parentNode;
 
-    let block = findBlockAncestor(node);
+    const CALLOUT_TYPES = ['note', 'warning', 'example-block'];
 
-    // If we don't have a sensible block, wrap one so we can style it.
-    if (!block) {
-      block = document.createElement('div');
-      const r = sel.getRangeAt(0);
-      r.surroundContents(block);
-    } else if (!/^(P|DIV|LI|BLOCKQUOTE)$/.test(block.nodeName)) {
-      const wrap = document.createElement('div');
-      block.replaceWith(wrap);
-      wrap.appendChild(block);
-      block = wrap;
-    }
+    // If we're already inside a callout, prefer to operate on that.
+    const existingCallout =
+      node.closest && node.closest('div.callout');
 
-    const classes = ['note', 'warning', 'example-block'];
-
+    // ---- Remove callout ----
     if (cls === 'remove') {
-      classes.forEach((c) => block.classList.remove(c));
+      if (!existingCallout) return;
 
-      // If this block is just a naked wrapper, unwrap it.
-      if (
-        (block.nodeName === 'DIV' || block.nodeName === 'P') &&
-        !block.getAttributeNames().length &&
-        !block.classList.length &&
-        block.parentNode
-      ) {
-        while (block.firstChild) block.parentNode.insertBefore(block.firstChild, block);
-        block.parentNode.removeChild(block);
+      CALLOUT_TYPES.forEach((c) => existingCallout.classList.remove(c));
+
+      const stillTyped = CALLOUT_TYPES.some((c) =>
+        existingCallout.classList.contains(c),
+      );
+
+      // If it has no type left, unwrap the callout div entirely.
+      if (!stillTyped) {
+        unwrapNode(existingCallout);
       }
-    } else {
-      classes.forEach((c) => block.classList.remove(c));
-      block.classList.add(cls);
+
+      docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+      return;
     }
+
+    // ---- Add / change callout type ----
+    let callout = existingCallout;
+
+    // Helper: make sure a div.callout exists in the right place
+    function ensureCalloutContainer() {
+      if (callout) return callout;
+
+      let block = findBlockAncestor(node);
+
+      // Case A: selection inside an <li> → create a callout div inside the li
+      if (block && block.nodeName === 'LI') {
+        callout = document.createElement('div');
+        callout.classList.add('callout');
+
+        if (!sel.isCollapsed) {
+          // Try to wrap the selected contents inside the li
+          try {
+            range.surroundContents(callout);
+          } catch (e) {
+            // Fallback: move the selected text into the callout
+            callout.textContent = range.toString();
+            range.deleteContents();
+            block.appendChild(callout);
+          }
+        } else {
+          // Collapsed selection: insert an empty callout for the user to type into
+          block.appendChild(callout);
+        }
+
+        return callout;
+      }
+
+      // Case B: no useful block → wrap the selection directly
+      if (!block || block === wysiwyg) {
+        callout = document.createElement('div');
+        callout.classList.add('callout');
+        try {
+          range.surroundContents(callout);
+        } catch (e) {
+          callout.textContent = range.toString();
+          range.deleteContents();
+          range.insertNode(callout);
+        }
+        return callout;
+      }
+
+      // Case C: normal block (P, BLOCKQUOTE, DIV, etc.) → wrap the whole block
+      if (block.nodeName !== 'DIV' || !block.classList.contains('callout')) {
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('callout');
+        block.replaceWith(wrapper);
+
+        if (block.nodeName === 'P') {
+          // Move the P's children directly into the callout and drop the P
+          while (block.firstChild) {
+            wrapper.appendChild(block.firstChild);
+          }
+          // P is now empty and detached
+        } else {
+          wrapper.appendChild(block);
+        }
+
+        callout = wrapper;
+      } else {
+        callout = block;
+      }
+
+      return callout;
+    }
+
+    // Ensure we have a callout container in the right place
+    callout = ensureCalloutContainer();
+    if (!callout) return;
+
+    // Swap the type class
+    CALLOUT_TYPES.forEach((c) => callout.classList.remove(c));
+    callout.classList.add(cls);
 
     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   }
@@ -236,6 +344,39 @@ export function initWysiwygView({ elements, docState }) {
   wysiwyg.addEventListener('keyup', cacheRange);
   wysiwyg.addEventListener('mouseleave', cacheRange);
 
+  // Fix visual caret position in empty list items created by Enter
+  wysiwyg.addEventListener('keyup', (e) => {
+    if (e.key !== 'Enter') return;
+
+    const sel = window.getSelection();
+    if (!sel || !sel.anchorNode) return;
+
+    let node = sel.anchorNode;
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+
+    const li = node.closest && node.closest('li');
+    if (!li) return;
+
+    const html = li.innerHTML.trim();
+
+    // Common empty-li shapes: "<br>" or "" (some browsers)
+    if (html === '<br>' || html === '') {
+      li.innerHTML = '\u200B'; // zero-width space
+
+      // Put caret after the zero-width space
+      const range = document.createRange();
+      const textNode = li.firstChild;
+      if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+        range.setStart(textNode, textNode.textContent.length);
+        range.collapse(true);
+
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+  });
+
+
   // ---- Toolbar bindings (inline actions) ----
   const action = (name) =>
     document.querySelector(`[data-action="${name}"]`);
@@ -290,7 +431,9 @@ export function initWysiwygView({ elements, docState }) {
   });
 
   // Live sync from WYSIWYG typing
-  wysiwyg.addEventListener('input', () =>
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' }),
-  );
+  wysiwyg.addEventListener('input', () => {
+    normalizeInline();
+    normalizeBlocks();
+    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+  });
 }

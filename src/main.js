@@ -59,6 +59,9 @@ if (menuNew && btnClearAll && menuPanel) {
   const toolsHtml = $('toolsHtml');
   const toolsWysiwyg = $('toolsWysiwyg');
 
+  initWysiwygToolbarBehavior(wysiwyg);
+
+
   const viewWord = $('viewWord');
   const viewHtml = $('viewHtml');
   const viewWysiwyg = $('viewWysiwyg');
@@ -102,10 +105,126 @@ if (menuImport && navWord && menuPanel) {
   const btnAlignRight = $('btnAlignRight');
   const btnAlignJustify = $('btnAlignJustify');
 
-  
+function initWysiwygToolbarBehavior(editor) {
+  if (!editor) return;
+
+  const toolbar = document.getElementById('toolsWysiwyg');
+
+  // Map the buttons we care about for "active" states
+  const buttonMap = {
+    bold: toolbar.querySelector('[data-action="bold"]'),
+    italic: toolbar.querySelector('[data-action="italic"]'),
+    underline: toolbar.querySelector('[data-action="underline"]'),
+    strikeThrough: toolbar.querySelector('[data-action="strikeThrough"]'),
+    subscript: toolbar.querySelector('[data-action="subscript"]'),
+    superscript: toolbar.querySelector('[data-action="superscript"]'),
+
+    ul: document.getElementById('btnUl'),
+    ol: document.getElementById('btnOl'),
+
+    alignLeft: document.getElementById('btnAlignLeft'),
+    alignCenter: document.getElementById('btnAlignCenter'),
+    alignRight: document.getElementById('btnAlignRight'),
+    alignJustify: document.getElementById('btnAlignJustify'),
+  };
+
+  function clearActiveStates() {
+    Object.values(buttonMap).forEach((btn) => {
+      if (btn) btn.classList.remove('is-active');
+    });
+  }
+
+  function updateToolbarState() {
+    const sel = document.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+      clearActiveStates();
+      return;
+    }
+
+    const range = sel.getRangeAt(0);
+    const container = range.commonAncestorContainer;
+
+    // If the selection is outside the editor, clear states
+    if (!editor.contains(container)) {
+      clearActiveStates();
+      return;
+    }
+
+    // Inline styles: use queryCommandState (works well if you're using execCommand)
+    const inlineStates = {
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
+      strikeThrough: document.queryCommandState('strikeThrough'),
+      subscript: document.queryCommandState('subscript'),
+      superscript: document.queryCommandState('superscript'),
+    };
+
+    Object.entries(inlineStates).forEach(([key, isOn]) => {
+      const btn = buttonMap[key];
+      if (!btn) return;
+      btn.classList.toggle('is-active', !!isOn);
+    });
+
+    // Lists
+    const listStates = {
+      ul: document.queryCommandState('insertUnorderedList'),
+      ol: document.queryCommandState('insertOrderedList'),
+    };
+
+    Object.entries(listStates).forEach(([key, isOn]) => {
+      const btn = buttonMap[key];
+      if (!btn) return;
+      btn.classList.toggle('is-active', !!isOn);
+    });
+
+    // Alignment
+    const alignStates = {
+      alignLeft: document.queryCommandState('justifyLeft'),
+      alignCenter: document.queryCommandState('justifyCenter'),
+      alignRight: document.queryCommandState('justifyRight'),
+      alignJustify: document.queryCommandState('justifyFull'),
+    };
+
+    Object.entries(alignStates).forEach(([key, isOn]) => {
+      const btn = buttonMap[key];
+      if (!btn) return;
+      btn.classList.toggle('is-active', !!isOn);
+    });
+  }
+
+  // 1) Don’t let toolbar buttons steal focus
+  document.querySelectorAll('#toolsWysiwyg .tbtn').forEach((button) => {
+    button.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+    });
+
+    button.addEventListener('click', () => {
+      editor.focus();
+      // Let the command run first, then sync the toolbar state
+      setTimeout(updateToolbarState, 0);
+    });
+  });
+
+  // 2) Update toolbar as the user moves around in the editor
+  document.addEventListener('selectionchange', updateToolbarState);
+  editor.addEventListener('keyup', updateToolbarState);
+  editor.addEventListener('mouseup', updateToolbarState);
+
+  // Initial sync
+  updateToolbarState();
+}
+
+
+// Call this once after the DOM is ready and after your editor/toolbar exist
+document.addEventListener("DOMContentLoaded", () => {
+ initWysiwygToolbarBehavior(wysiwyg);
+});
+
 
   // ---- Document state ----
   const docState = createDocState({ htmlEditor, wysiwyg, statBytes, statWords });
+  
 
   // ---- View switching ----
   let activeView = 'wysiwyg';
