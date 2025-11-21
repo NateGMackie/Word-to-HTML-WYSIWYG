@@ -5,6 +5,9 @@ import { initHtmlView } from './views/html.js';
 import { initWysiwygView } from './views/wysiwyg.js';
 import { initHotkeys } from './ux/hotkeys.js';
 
+
+import { mountWysiwygEditor } from './editor/mountWysiwyg.js';
+
 const $ = (id) => document.getElementById(id);
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -26,6 +29,8 @@ window.addEventListener('DOMContentLoaded', () => {
     menuPanel.classList.add('hidden'); // close menu
   });
 }
+
+
 
 const btnThemeToggle = document.getElementById('btnThemeToggle');
 const body = document.body;
@@ -215,13 +220,6 @@ function initWysiwygToolbarBehavior(editor) {
   updateToolbarState();
 }
 
-
-// Call this once after the DOM is ready and after your editor/toolbar exist
-document.addEventListener("DOMContentLoaded", () => {
- initWysiwygToolbarBehavior(wysiwyg);
-});
-
-
   // ---- Document state ----
   const docState = createDocState({ htmlEditor, wysiwyg, statBytes, statWords });
   
@@ -257,6 +255,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  
+
   function getActiveView() {
     return activeView;
   }
@@ -267,14 +267,17 @@ document.addEventListener("DOMContentLoaded", () => {
       if (activeView === 'html') {
         await navigator.clipboard.writeText(htmlEditor.value);
       } else if (activeView === 'wysiwyg') {
-        const html = wysiwyg.innerHTML;
-        const data = [
-          new ClipboardItem({
-            'text/html': new Blob([html], { type: 'text/html' }),
-            'text/plain': new Blob([html.replace(/<[^>]+>/g, '')], {
-              type: 'text/plain',
-            }),
-          }),
+        const html =
+    docState.getCleanHtml() ||
+    (wysiwyg?.innerHTML || '');
+
+  const data = [
+    new ClipboardItem({
+      'text/html': new Blob([html], { type: 'text/html' }),
+      'text/plain': new Blob([html.replace(/<[^>]+>/g, '')], {
+        type: 'text/plain',
+      }),
+    }),
         ];
         await navigator.clipboard.write(data);
       } else {
@@ -359,6 +362,8 @@ document.addEventListener("DOMContentLoaded", () => {
     docState,
   });
 
+  
+
   // ---- Navigation ----
   navWord?.addEventListener('click', () => setActiveView('word'));
   navHtml?.addEventListener('click', () => setActiveView('html'));
@@ -383,7 +388,13 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   });
 
-  // ---- Init state ----
+    // ---- Init state ----
   docState.setCleanHtml('', { from: 'system' });
   setActiveView('wysiwyg');
+
+  // Mount Lexical WYSIWYG last, and sync editor → docState
+  mountWysiwygEditor((html) => {
+    // Lexical is now the source of truth when you're in WYSIWYG.
+    docState.setCleanHtml(html, { from: 'wysiwyg' });
+  });
 });
