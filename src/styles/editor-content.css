@@ -219,3 +219,44 @@
   pointer-events: none;
   white-space: nowrap;
 }
+
+/* Inline text formats for Lexical */
+
+.w2h-text-bold {
+  font-weight: 600;
+}
+
+.w2h-text-italic {
+  font-style: italic;
+}
+
+.w2h-text-underline {
+  text-decoration: underline;
+}
+
+.w2h-text-strike {
+  text-decoration: line-through;
+}
+
+.w2h-text-sub {
+  vertical-align: sub;
+  font-size: 0.8em;
+}
+
+.w2h-text-super {
+  vertical-align: super;
+  font-size: 0.8em;
+}
+
+.w2h-text-code {
+  font-family: ui-monospace, monospace;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+}
+
+.w2h-link {
+  color: #0ea5e9; /* or your accent color */
+  text-decoration: underline;
+  cursor: pointer;
+}

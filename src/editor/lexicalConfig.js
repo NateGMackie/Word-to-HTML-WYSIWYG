@@ -14,13 +14,27 @@ const editorTheme = {
     h2: 'w2h-heading-2',
     h3: 'w2h-heading-3',
   },
+
   list: {
     ul: 'w2h-ul',
     ol: 'w2h-ol',
     listitem: 'w2h-li',
   },
+
   link: 'w2h-link',
+
+  // ---- ADD THIS ----
+  text: {
+    bold: 'w2h-text-bold',
+    italic: 'w2h-text-italic',
+    underline: 'w2h-text-underline',
+    strikethrough: 'w2h-text-strike',
+    subscript: 'w2h-text-sub',
+    superscript: 'w2h-text-super',
+    code: 'w2h-text-code',
+  },
 };
+
 
 export const editorNodes = [
   ParagraphNode,

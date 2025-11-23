@@ -6,9 +6,11 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { $getRoot } from 'lexical';
+import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 
 import { editorConfig } from './lexicalConfig.js';
 import ToolbarBridgePlugin from './ToolbarBridgePlugin.jsx';
+import HeadingBridgePlugin from './HeadingBridgePlugin.jsx';
 
 
 function Placeholder() {
@@ -35,28 +37,11 @@ export default function WysiwygEditor({ onHtmlChange }) {
           placeholder={<Placeholder />}
         />
         <HistoryPlugin />
-        <OnChangePlugin
-          onChange={(editorState, editor) => {
-            if (!onHtmlChange) return;
-
-            editorState.read(() => {
-              const root = $getRoot();
-              const text = root.getTextContent();
-
-              const html = text
-                ? `<p>${text
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')}</p>`
-                : '';
-
-              onHtmlChange(html);
-            });
-          }}
-        />
+        <LinkPlugin />
+        <OnChangePlugin /* ...existing onChange... */ />
         <ToolbarBridgePlugin />
+        <HeadingBridgePlugin /> {/* <-- make sure this line exists */}
       </div>
     </LexicalComposer>
   );
 }
-

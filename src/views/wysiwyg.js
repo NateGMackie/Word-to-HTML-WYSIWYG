@@ -387,11 +387,11 @@ export function initWysiwygView({ elements, docState }) {
   action('strikeThrough')?.addEventListener('click', () => command('strikeThrough'));
   action('subscript')?.addEventListener('click', () => command('subscript'));
   action('superscript')?.addEventListener('click', () => command('superscript'));
-  action('link')?.addEventListener('click', () => {
-    const url = prompt('Enter URL:');
-    if (url) command('createLink', url);
-  });
-  action('unlink')?.addEventListener('click', () => command('unlink'));
+ // action('link')?.addEventListener('click', () => {
+ //   const url = prompt('Enter URL:');
+ //   if (url) command('createLink', url);
+ // });
+ // action('unlink')?.addEventListener('click', () => command('unlink'));
   action('removeFormat')?.addEventListener('click', () => command('removeFormat'));
 
   // Lists / indent / alignment
@@ -412,23 +412,32 @@ export function initWysiwygView({ elements, docState }) {
   btnHr?.addEventListener('click', () => command('insertHorizontalRule'));
 
   // Styles dropdown
-  stylesSelect?.addEventListener('change', (e) => {
-    restoreRange();
+  // stylesSelect?.addEventListener('change', (e) => {
+  // const v = e.target.value || '';
+  // if (!v) return;
 
-    const v = e.target.value || '';
-    if (!v) return;
+  // --- Block formats (p, h1, h2, h3, etc.) ---
+  // Let Lexical's HeadingBridgePlugin handle these.
+  // if (v.startsWith('block:')) {
+    // Optionally reset the dropdown; Lexical also resets it.
+  //   stylesSelect.selectedIndex = 0;
+  //   return;
+  // }
 
-    if (v.startsWith('block:')) {
-      const tag = v.split(':')[1]; // p, h1, h2, h3, pre, blockquote
-      setBlockFormat(tag);
-    } else if (v.startsWith('callout:')) {
-      const which = v.split(':')[1]; // note, warning, example-block, remove
-      toggleCallout(which);
-    }
+  // --- Callouts (note, warning, example, remove) ---
+  // if (v.startsWith('callout:')) {
+    // This is still using the old contenteditable implementation
+    // until we move callouts into Lexical.
+  //   restoreRange();
 
-    stylesSelect.selectedIndex = 0;
-    wysiwyg.focus();
-  });
+  //   const which = v.split(':')[1]; // note, warning, example-block, remove
+  //   toggleCallout(which);
+
+  //   stylesSelect.selectedIndex = 0;
+  //   wysiwyg.focus();
+ //  }
+// });
+
 
   // Live sync from WYSIWYG typing
   wysiwyg.addEventListener('input', () => {
