@@ -2,7 +2,7 @@
   0. Scope – ONLY affect WYSIWYG content
 -------------------------------------*/
 
-#wysiwyg {
+#wysiwygRoot {
   font-family: Arial, sans-serif;
   font-size: 14px;
   line-height: 1.6;
@@ -10,7 +10,7 @@
 }
 
 /* Ensure nested elements inherit correctly */
-#wysiwyg * {
+#wysiwygRoot * {
   box-sizing: border-box;
 }
 
@@ -19,14 +19,14 @@
   (ported from your doc CSS, but scoped + slightly tweaked for dark UI)
 -------------------------------------*/
 
-#wysiwyg h1 {
+#wysiwygRoot h1 {
   font-size: 22px !important;
   font-weight: bold;
   margin-bottom: 10px;
   color: #f9fafb;
 }
 
-#wysiwyg h2 {
+#wysiwygRoot h2 {
   font-size: 18px !important;
   font-weight: bold;
   margin-top: 40px;
@@ -34,7 +34,7 @@
   color: #e5e7eb;
 }
 
-#wysiwyg h3 {
+#wysiwygRoot h3 {
   font-size: 16px !important;
   font-weight: bold;
   margin-top: 18px;
@@ -46,7 +46,7 @@
   3. Paragraphs
 -------------------------------------*/
 
-#wysiwyg p {
+#wysiwygRoot p {
   margin-bottom: 12px;
 }
 
@@ -55,29 +55,29 @@
   (same structure as your ServiceNow-friendly CSS)
 -------------------------------------*/
 
-#wysiwyg ul,
-#wysiwyg ol {
+#wysiwygRoot ul,
+#wysiwygRoot ol {
   margin-left: 20px;
   padding-left: 0;
   list-style-position: inside; /* Required by ServiceNow */
 }
 
-#wysiwyg ul li,
-#wysiwyg ol li {
+#wysiwygRoot ul li,
+#wysiwygRoot ol li {
   margin-bottom: 6px;
   position: relative;
   padding-left: 20px;
   text-indent: -20px; /* Creates hanging indent */
 }
 
-#wysiwyg ul li::marker,
-#wysiwyg ol li::marker {
+#wysiwygRoot ul li::marker,
+#wysiwygRoot ol li::marker {
   font-weight: bold;
 }
 
 /* Fix line breaks in list items */
-#wysiwyg ul li br,
-#wysiwyg ol li br {
+#wysiwygRoot ul li br,
+#wysiwygRoot ol li br {
   display: block;
   content: "";
   margin-left: 20px;
@@ -87,21 +87,21 @@
   5. Tables
 -------------------------------------*/
 
-#wysiwyg table {
+#wysiwygRoot table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
 }
 
-#wysiwyg th,
-#wysiwyg thead,
-#wysiwyg td {
+#wysiwygRoot th,
+#wysiwygRoot thead,
+#wysiwygRoot td {
   border: 1px solid #4b5563;
   padding: 8px;
 }
 
-#wysiwyg th,
-#wysiwyg thead {
+#wysiwygRoot th,
+#wysiwygRoot thead {
   background-color: #111827;
   font-weight: bold;
 }
@@ -110,7 +110,7 @@
   6. Code Blocks
 -------------------------------------*/
 
-#wysiwyg pre {
+#wysiwygRoot pre {
   background: #111827;
   padding: 10px;
   border-radius: 4px;
@@ -122,12 +122,12 @@
   7. Links
 -------------------------------------*/
 
-#wysiwyg a {
+#wysiwygRoot a {
   color: #60a5fa;
   text-decoration: none;
 }
 
-#wysiwyg a:hover {
+#wysiwygRoot a:hover {
   text-decoration: underline;
 }
 
@@ -136,7 +136,7 @@
   (same semantics, colors nudged for dark background)
 -------------------------------------*/
 
-#wysiwyg .callout {
+#wysiwygRoot .callout {
   padding: 1em;
   margin: 1em 0;
   white-space: normal;
@@ -144,32 +144,32 @@
   border-radius: 4px;
 }
 
-#wysiwyg .callout.note {
+#wysiwygRoot .callout.note {
   background-color: #0f172a;
   border-left: 4px solid #3b82f6;
 }
 
-#wysiwyg .callout.warning {
+#wysiwygRoot .callout.warning {
   background-color: #43302b;
   border-left: 4px solid #f97316;
 }
 
-#wysiwyg .callout.example-block {
+#wysiwygRoot .callout.example-block {
   background-color: #111827;
   border-left: 4px solid #9ca3af;
 }
 
 /* Adjust spacing/indentation inside lists */
-#wysiwyg li .callout {
+#wysiwygRoot li .callout {
   text-indent: 0;
   padding-left: 1em;
   margin-left: 0;
   display: block;
 }
 
-#wysiwyg li > .note,
-#wysiwyg li > .warning,
-#wysiwyg li > .example-block {
+#wysiwygRoot li > .note,
+#wysiwygRoot li > .warning,
+#wysiwygRoot li > .example-block {
   margin-top: 0.5em;
 }
 
@@ -177,7 +177,7 @@
   9. User Input Formatting
 -------------------------------------*/
 
-#wysiwyg .user-input {
+#wysiwygRoot .user-input {
   font-family: Consolas, monospace;
   background-color: #374151;
   padding: 2px 4px;
@@ -185,7 +185,7 @@
   color: #f9fafb;
 }
 
-#wysiwyg .user-input .variable {
+#wysiwygRoot .user-input .variable {
   font-style: italic;
   color: #e5e7eb;
 }
@@ -194,7 +194,7 @@
   10. Screenshots
 -------------------------------------*/
 
-#wysiwyg .screenshot {
+#wysiwygRoot .screenshot {
   border: 1px solid #9ca3af;
   display: block;
   margin: 12px 0;
@@ -207,7 +207,7 @@
   (only applied if you explicitly add .draft to the editor)
 -------------------------------------*/
 
-#wysiwyg.draft::before {
+#wysiwygRoot.draft::before {
   content: "DRAFT";
   position: absolute;
   top: 40%;
@@ -222,19 +222,19 @@
 
 /* Inline text formats for Lexical */
 
-.w2h-text-bold {
+#wysiwygRoot .w2h-text-bold {
   font-weight: 600;
 }
 
-.w2h-text-italic {
+#wysiwygRoot .w2h-text-italic {
   font-style: italic;
 }
 
-.w2h-text-underline {
+#wysiwygRoot .w2h-text-underline {
   text-decoration: underline;
 }
 
-.w2h-text-strike {
+#wysiwygRoot .w2h-text-strike {
   text-decoration: line-through;
 }
 
@@ -253,10 +253,4 @@
   background-color: rgba(0, 0, 0, 0.05);
   padding: 0.1rem 0.2rem;
   border-radius: 3px;
-}
-
-.w2h-link {
-  color: #0ea5e9; /* or your accent color */
-  text-decoration: underline;
-  cursor: pointer;
 }

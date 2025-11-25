@@ -2,7 +2,7 @@
 import { createDocState } from './services/docState.js';
 import { initWordView } from './views/word.js';
 import { initHtmlView } from './views/html.js';
-import { initWysiwygView } from './views/wysiwyg.js';
+// import { initWysiwygView } from './views/wysiwyg.js';
 import { initHotkeys } from './ux/hotkeys.js';
 
 
@@ -357,10 +357,10 @@ function initWysiwygToolbarBehavior(editor) {
     docState,
   });
 
-  initWysiwygView({
-    elements: sharedElements,
-    docState,
-  });
+  //initWysiwygView({
+  //  elements: sharedElements,
+  //  docState,
+  //});
 
   
 
@@ -388,13 +388,18 @@ function initWysiwygToolbarBehavior(editor) {
     },
   });
 
-    // ---- Init state ----
+  // ---- Init state ----
   docState.setCleanHtml('', { from: 'system' });
   setActiveView('wysiwyg');
 
-  // Mount Lexical WYSIWYG last, and sync editor → docState
-  mountWysiwygEditor((html) => {
-    // Lexical is now the source of truth when you're in WYSIWYG.
-    docState.setCleanHtml(html, { from: 'wysiwyg' });
+  // Mount Lexical WYSIWYG last, and sync editor → HTML view + docState
+  mountWysiwygEditor({
+    onHtmlChange: (html) => {
+      if (htmlEditor) {
+        htmlEditor.value = html;
+      }
+      docState.setCleanHtml(html, { from: 'wysiwyg' });
+    },
   });
 });
+

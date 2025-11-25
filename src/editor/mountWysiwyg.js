@@ -3,7 +3,11 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import WysiwygEditor from './WysiwygEditor.jsx';
 
-export function mountWysiwygEditor(onHtmlChange) {
+/**
+ * Mounts the Lexical-backed editor into #wysiwygRoot.
+ * onHtmlChange is a callback you can use to keep the HTML view + docState in sync.
+ */
+export function mountWysiwygEditor({ onHtmlChange } = {}) {
   const container = document.getElementById('wysiwygRoot');
   if (!container) {
     console.warn('mountWysiwygEditor: #wysiwygRoot not found in DOM');
@@ -12,9 +16,10 @@ export function mountWysiwygEditor(onHtmlChange) {
 
   const root = createRoot(container);
 
+  // No JSX here – pure React.createElement
   root.render(
     React.createElement(WysiwygEditor, {
-      onHtmlChange,
+      onHtmlChange: onHtmlChange || (() => {}),
     }),
   );
 }

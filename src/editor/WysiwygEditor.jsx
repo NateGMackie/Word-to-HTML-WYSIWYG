@@ -12,7 +12,6 @@ import { editorConfig } from './lexicalConfig.js';
 import ToolbarBridgePlugin from './ToolbarBridgePlugin.jsx';
 import HeadingBridgePlugin from './HeadingBridgePlugin.jsx';
 
-
 function Placeholder() {
   return (
     <div className="w2h-placeholder text-stone-500 italic">
@@ -29,18 +28,37 @@ export default function WysiwygEditor({ onHtmlChange }) {
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <div className="w2h-editor-shell border border-subtle rounded-md bg-chrome p-3">
+      <div className="w2h-editor-shell p-3 h-full">
         <RichTextPlugin
           contentEditable={
-            <ContentEditable className="w2h-editor prose prose-sm max-w-none focus:outline-none" />
+            <ContentEditable className="w2h-editor focus:outline-none" />
           }
           placeholder={<Placeholder />}
         />
         <HistoryPlugin />
         <LinkPlugin />
-        <OnChangePlugin /* ...existing onChange... */ />
+        <OnChangePlugin
+          onChange={(editorState, editor) => {
+            if (!onHtmlChange) return;
+
+            editorState.read(() => {
+              const root = $getRoot();
+              const text = root.getTextContent();
+
+              // Dumb exporter for now: wrap plain text in <p>, escape HTML
+              const html = text
+                ? `<p>${text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')}</p>`
+                : '';
+
+              onHtmlChange(html);
+            });
+          }}
+        />
         <ToolbarBridgePlugin />
-        <HeadingBridgePlugin /> {/* <-- make sure this line exists */}
+        <HeadingBridgePlugin />
       </div>
     </LexicalComposer>
   );

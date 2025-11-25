@@ -355,16 +355,17 @@
         </div>
 
         
-        <div id="viewWysiwyg" class="h-full flex flex-col p-1">
+        <!-- WYSIWYG view -->
+<div id="viewWysiwyg" class="h-full flex flex-col p-1">
+  <div
+    id="wysiwygRoot"
+    class="flex-1 min-h-0 rounded-md border border-strong bg-panel overflow-auto"></div>
+</div>
 
-          <!-- Replace or sit alongside your old WYSIWYG container -->
-          <div id="wysiwygRoot" class="flex-1 min-h-0 prose prose-invert max-w-none p-3 rounded-md border border-strong bg-panel overflow-auto"></div>
 
-          <div id="wysiwyg"
-               contenteditable="true"
-               class="flex-1 min-h-0 prose prose-invert max-w-none p-3 rounded-md border border-strong bg-panel overflow-auto">
-          </div>
-        </div>
+
+</section>
+ 
       </section>
 
       <!-- Document stats footer -->
