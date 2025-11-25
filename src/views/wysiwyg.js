@@ -49,12 +49,12 @@ export function initWysiwygView({ elements, docState }) {
     });
   }
 
-  function command(cmd, val = null) {
-    document.execCommand(cmd, false, val);
-    normalizeInline();
-    normalizeBlocks();
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
-  }
+   function command(cmd, val = null) {
+     document.execCommand(cmd, false, val);
+     normalizeInline();
+     normalizeBlocks();
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+   }
 
   // ---- Block formatting / styles ----
   function setBlockFormat(tag) {
@@ -80,8 +80,8 @@ export function initWysiwygView({ elements, docState }) {
       document.execCommand('formatBlock', false, blockArg);
     }
 
-    normalizeBlocks();
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     normalizeBlocks();
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   }
 
   // Enter handling:
@@ -211,20 +211,20 @@ export function initWysiwygView({ elements, docState }) {
     CALLOUT_TYPES.forEach((c) => callout.classList.remove(c));
     callout.classList.add(cls);
 
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   }
 
-  function applyScreenshot() {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    let node = sel.getRangeAt(0).commonAncestorContainer;
-    if (node.nodeType === 3) node = node.parentNode;
-    const img = node.closest ? node.closest('img') : null;
-    if (img) {
-      img.classList.add('screenshot');
-      docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
-    }
-  }
+   function applyScreenshot() {
+     const sel = window.getSelection();
+     if (!sel || sel.rangeCount === 0) return;
+     let node = sel.getRangeAt(0).commonAncestorContainer;
+     if (node.nodeType === 3) node = node.parentNode;
+     const img = node.closest ? node.closest('img') : null;
+     if (img) {
+       img.classList.add('screenshot');
+       docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     }
+   }
 
   function normalizeTable() {
     const sel = window.getSelection();
@@ -249,7 +249,7 @@ export function initWysiwygView({ elements, docState }) {
       });
     });
 
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   }
 
   function wrapUserInput() {
@@ -443,6 +443,6 @@ export function initWysiwygView({ elements, docState }) {
   wysiwyg.addEventListener('input', () => {
     normalizeInline();
     normalizeBlocks();
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   });
 }

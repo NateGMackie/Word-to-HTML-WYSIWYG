@@ -5,12 +5,16 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { $getRoot } from 'lexical';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
+import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { $getRoot } from 'lexical';
+import { $generateHtmlFromNodes } from '@lexical/html';
 
 import { editorConfig } from './lexicalConfig.js';
 import ToolbarBridgePlugin from './ToolbarBridgePlugin.jsx';
 import HeadingBridgePlugin from './HeadingBridgePlugin.jsx';
+
+
 
 function Placeholder() {
   return (
@@ -35,31 +39,26 @@ export default function WysiwygEditor({ onHtmlChange }) {
           }
           placeholder={<Placeholder />}
         />
+
         <HistoryPlugin />
+        <ListPlugin />
         <LinkPlugin />
+
         <OnChangePlugin
           onChange={(editorState, editor) => {
             if (!onHtmlChange) return;
 
             editorState.read(() => {
-              const root = $getRoot();
-              const text = root.getTextContent();
-
-              // Dumb exporter for now: wrap plain text in <p>, escape HTML
-              const html = text
-                ? `<p>${text
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')}</p>`
-                : '';
-
+              const html = $generateHtmlFromNodes(editor);
               onHtmlChange(html);
             });
           }}
         />
+
         <ToolbarBridgePlugin />
         <HeadingBridgePlugin />
       </div>
     </LexicalComposer>
   );
 }
+

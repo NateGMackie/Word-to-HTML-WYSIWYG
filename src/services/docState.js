@@ -11,18 +11,18 @@ export function createDocState({ htmlEditor, wysiwyg, statBytes, statWords }) {
     statWords.textContent = words.toLocaleString();
   }
 
-  function setCleanHtml(html, { from = 'system' } = {}) {
-    cleanHTML = html || '';
+   function setCleanHtml(html, { from = 'system' } = {}) {
+   cleanHTML = html || '';
 
-    if (from !== 'html' && htmlEditor) {
-      htmlEditor.value = cleanHTML;
-    }
-    if (from !== 'wysiwyg' && wysiwyg) {
-      wysiwyg.innerHTML = cleanHTML || '';
-    }
+     if (from !== 'html' && htmlEditor) {
+       htmlEditor.value = cleanHTML;
+     }
+     if (from !== 'wysiwyg' && wysiwyg) {
+       wysiwyg.innerHTML = cleanHTML || '';
+     }
 
-    updateStats();
-  }
+     updateStats();
+   }
 
   function getCleanHtml() {
     return cleanHTML;

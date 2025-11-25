@@ -1,16 +1,10 @@
 // src/editor/lexicalConfig.js
-import {
-  ParagraphNode,
-  TextNode,
-} from 'lexical';
-import {
-  HeadingNode,
-} from '@lexical/rich-text';
-import {
-  ListNode,
-  ListItemNode,
-} from '@lexical/list';
+import {ParagraphNode, TextNode,} from 'lexical';
+import {HeadingNode,} from '@lexical/rich-text';
+import { AutoLinkNode } from '@lexical/link';
 import { LinkNode } from '@lexical/link';
+import {ListNode, ListItemNode,} from '@lexical/list';
+
 
 // Basic theme classes. We can align these to your CSS later.
 export const editorConfig = {

@@ -3,6 +3,10 @@ import { useEffect } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { FORMAT_TEXT_COMMAND } from 'lexical';
 import { TOGGLE_LINK_COMMAND } from '@lexical/link';
+import {
+  INSERT_ORDERED_LIST_COMMAND,
+  INSERT_UNORDERED_LIST_COMMAND,
+} from '@lexical/list';
 
 export default function ToolbarBridgePlugin() {
   const [editor] = useLexicalComposerContext();
@@ -60,6 +64,20 @@ function hookUnlinkButton(selector) {
   return () => btn.removeEventListener('click', handler);
 }
 
+function hookListButton(selector, command) {
+  const btn = document.querySelector(selector);
+  if (!btn) return null;
+
+  const handler = (event) => {
+    event.preventDefault();
+    editor.focus();
+    editor.dispatchCommand(command, undefined);
+  };
+
+  btn.addEventListener('click', handler);
+  return () => btn.removeEventListener('click', handler);
+}
+
 
     const cleanups = [
       hookButton('#toolsWysiwyg [data-action="bold"]', 'bold'),
@@ -71,6 +89,10 @@ function hookUnlinkButton(selector) {
 
       hookLinkButton('#toolsWysiwyg [data-action="link"]'),
       hookUnlinkButton('#toolsWysiwyg [data-action="unlink"]'),
+
+      // Lists
+      hookListButton('#btnUl', INSERT_UNORDERED_LIST_COMMAND),
+      hookListButton('#btnOl', INSERT_ORDERED_LIST_COMMAND),
     ].filter(Boolean);
 
     return () => {

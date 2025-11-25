@@ -83,6 +83,21 @@
   margin-left: 20px;
 }
 
+#wysiwygRoot ul {
+  list-style-type: disc;
+}
+
+#wysiwygRoot ol {
+  list-style-type: decimal;
+}
+
+/* Make sure markers are visible and match the text color */
+#wysiwygRoot ul li::marker,
+#wysiwygRoot ol li::marker {
+  color: inherit;
+  font-weight: bold;
+}
+
 /*-------------------------------------
   5. Tables
 -------------------------------------*/
