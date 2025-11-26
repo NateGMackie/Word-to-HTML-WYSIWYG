@@ -13,6 +13,7 @@ import { $generateHtmlFromNodes } from '@lexical/html';
 import { editorConfig } from './lexicalConfig.js';
 import ToolbarBridgePlugin from './ToolbarBridgePlugin.jsx';
 import HeadingBridgePlugin from './HeadingBridgePlugin.jsx';
+import { KeyboardPlugin } from '../plugins/KeyboardPlugin.js';
 
 
 
@@ -57,6 +58,7 @@ export default function WysiwygEditor({ onHtmlChange }) {
 
         <ToolbarBridgePlugin />
         <HeadingBridgePlugin />
+        <KeyboardPlugin />
       </div>
     </LexicalComposer>
   );

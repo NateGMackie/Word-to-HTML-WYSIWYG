@@ -1,12 +1,19 @@
+import React from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { KEY_ENTER_COMMAND, KEY_MODIFIER_COMMAND } from 'lexical';
-import { COMMAND_PRIORITY_EDITOR } from 'lexical';
+import {
+  KEY_ENTER_COMMAND,
+  KEY_MODIFIER_COMMAND,
+  KEY_TAB_COMMAND,
+  INDENT_CONTENT_COMMAND,
+  OUTDENT_CONTENT_COMMAND,
+  COMMAND_PRIORITY_EDITOR,
+} from 'lexical';
 
 export function KeyboardPlugin() {
   const [editor] = useLexicalComposerContext();
 
   React.useEffect(() => {
-    // Enter behavior
+    // Enter behavior (default for now)
     const unregisterEnter = editor.registerCommand(
       KEY_ENTER_COMMAND,
       (event) => {
@@ -21,16 +28,36 @@ export function KeyboardPlugin() {
       COMMAND_PRIORITY_EDITOR,
     );
 
-    // Shift+Enter (treated as soft break)
+    // Shift+Enter (soft break – still TODO)
     const unregisterShiftEnter = editor.registerCommand(
       KEY_MODIFIER_COMMAND,
       (payload) => {
         const { event } = payload;
         if (event.key === 'Enter' && event.shiftKey) {
           // TODO: soft break logic
-          return true;
+          return true; // tell Lexical we handled Shift+Enter
         }
         return false;
+      },
+      COMMAND_PRIORITY_EDITOR,
+    );
+
+    // Tab / Shift+Tab → indent / outdent
+    const unregisterTab = editor.registerCommand(
+      KEY_TAB_COMMAND,
+      (event) => {
+        // Prevent browser from leaving the editor
+        event.preventDefault();
+
+        if (event.shiftKey) {
+          // Shift+Tab = outdent
+          editor.dispatchCommand(OUTDENT_CONTENT_COMMAND, undefined);
+        } else {
+          // Tab = indent
+          editor.dispatchCommand(INDENT_CONTENT_COMMAND, undefined);
+        }
+
+        return true; // we handled the key
       },
       COMMAND_PRIORITY_EDITOR,
     );
@@ -38,6 +65,7 @@ export function KeyboardPlugin() {
     return () => {
       unregisterEnter();
       unregisterShiftEnter();
+      unregisterTab();
     };
   }, [editor]);
 
