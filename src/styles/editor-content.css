@@ -51,51 +51,64 @@
 }
 
 /*-------------------------------------
-  4. Lists
-  (same structure as your ServiceNow-friendly CSS)
--------------------------------------*/
+ 4. Lists (same structure as your ServiceNow-friendly CSS) 
+ -------------------------------------*/ 
+ /* #wysiwygRoot ul, 
+ #wysiwygRoot ol { 
+ margin-left: 20px; 
+ padding-left: 0; 
+ list-style-position: 
+ inside; /* Required by ServiceNow } 
+ 
+ #wysiwygRoot ul li, 
+ #wysiwygRoot ol li { 
+ margin-bottom: 6px; 
+ position: relative; 
+ padding-left: 20px; 
+ text-indent: -20px; /* Creates hanging indent } */ 
+ 
+ /* #wysiwygRoot ul li::marker, 
+ #wysiwygRoot ol li::marker { 
+ font-weight: bold; } */ 
+ 
+ /* Fix line breaks in list items */ 
+ /* #wysiwygRoot ul li br, 
+ #wysiwygRoot ol li br { 
+ display: block; content: ""; 
+ margin-left: 20px; } */ 
+ 
+ #wysiwygRoot ul { 
+  list-style-type: disc; 
+} 
 
-#wysiwygRoot ul,
-#wysiwygRoot ol {
-  margin-left: 20px;
-  padding-left: 0;
-  list-style-position: inside; /* Required by ServiceNow */
-}
+#wysiwygRoot ol { 
+  list-style-type: decimal; 
+} 
 
-#wysiwygRoot ul li,
-#wysiwygRoot ol li {
-  margin-bottom: 6px;
-  position: relative;
-  padding-left: 20px;
-  text-indent: -20px; /* Creates hanging indent */
-}
+/* Make sure markers are visible and match the text color */ 
+/* #wysiwygRoot ul li::marker, 
+#wysiwygRoot ol li::marker { 
+color: inherit; 
+font-weight: bold; 
+} */ 
+ 
+/* Editor-friendly lists inside the Lexical editor */ 
+#wysiwygRoot .w2h-editor ul, 
+#wysiwygRoot .w2h-editor ol { 
+  margin-left: 1.5rem; 
+  padding-left: 1.25rem; 
+  list-style-position: outside; /* better caret behavior */ 
+} 
 
-#wysiwygRoot ul li::marker,
-#wysiwygRoot ol li::marker {
-  font-weight: bold;
-}
-
-/* Fix line breaks in list items */
-#wysiwygRoot ul li br,
-#wysiwygRoot ol li br {
-  display: block;
-  content: "";
-  margin-left: 20px;
-}
-
-#wysiwygRoot ul {
-  list-style-type: disc;
-}
-
-#wysiwygRoot ol {
-  list-style-type: decimal;
-}
-
-/* Make sure markers are visible and match the text color */
-#wysiwygRoot ul li::marker,
-#wysiwygRoot ol li::marker {
-  color: inherit;
-  font-weight: bold;
+#wysiwygRoot .w2h-editor li { 
+  margin-bottom: 0.375rem; 
+  padding-left: 0; 
+  text-indent: 0; /* no hanging indent in-editor */ 
+} 
+/* Keep bullets/numbers visible and styled */ 
+#wysiwygRoot .w2h-editor ul li::marker, 
+#wysiwygRoot .w2h-editor ol li::marker { 
+  font-weight: bold; color: inherit; 
 }
 
 /*-------------------------------------
