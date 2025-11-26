@@ -96,7 +96,7 @@ font-weight: bold;
 #wysiwygRoot .w2h-editor ul, 
 #wysiwygRoot .w2h-editor ol { 
   margin-left: 1.5rem; 
-  padding-left: 1.25rem; 
+  padding-left: 0; 
   list-style-position: outside; /* better caret behavior */ 
 } 
 
@@ -109,6 +109,19 @@ font-weight: bold;
 #wysiwygRoot .w2h-editor ul li::marker, 
 #wysiwygRoot .w2h-editor ol li::marker { 
   font-weight: bold; color: inherit; 
+}
+
+/* Hide the outer marker when a list item only exists to wrap a nested list
+   This prevents "2.  1. Sub item" on the same line. */
+#wysiwygRoot .w2h-editor li:has(> ol),
+#wysiwygRoot .w2h-editor li:has(> ul) {
+  list-style-type: none;
+}
+
+/* Optional: add a small visual gap before nested lists */
+#wysiwygRoot .w2h-editor li > ol,
+#wysiwygRoot .w2h-editor li > ul {
+  margin-top: 0.25rem;
 }
 
 /*-------------------------------------
