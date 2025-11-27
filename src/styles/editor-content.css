@@ -236,9 +236,26 @@ font-weight: bold;
 
 #wysiwygRoot li > .note,
 #wysiwygRoot li > .warning,
-#wysiwygRoot li > .example-block {
+#wysiwygRoot li > .example-block,
+#wysiwygRoot li > .blockquote {
   margin-top: 0.5em;
 }
+
+/* blockquote style callout */
+
+#wysiwygRoot .callout.blockquote {
+  background-color: transparent !important;   /* no background */
+  border-left: 4px solid #6b7280;             /* neutral gray line */
+  padding: 1em;
+  margin: 1em 0;
+  color: #e5e7eb;                             /* same text color */
+}
+
+/* Optional: tweak blockquote’s inner <p> spacing */
+#wysiwygRoot .callout.blockquote p {
+  margin: 0.4em 0;
+}
+
 
 /*-------------------------------------
   9. User Input Formatting

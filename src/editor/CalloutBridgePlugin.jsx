@@ -26,6 +26,8 @@ function mapValueToKind(raw) {
   // note, warning map 1:1
   if (key === 'note' || key === 'warning') return key;
 
+  if (key === 'blockquote') return 'blockquote';
+
   return null;
 }
 

@@ -19,27 +19,20 @@ export function KeyboardPlugin() {
   const [editor] = useLexicalComposerContext();
 
   React.useEffect(() => {
-    // 1) Plain Enter → let Lexical/ListPlugin handle it for now
+    // 1) Enter → let Lexical/ListPlugin handle everything (including Shift+Enter)
     const unregisterEnter = editor.registerCommand(
       KEY_ENTER_COMMAND,
-      (event) => {
-        // No special behavior yet → fall through to default
+      () => {
+        // No special behavior; use built-in handling.
         return false;
       },
       COMMAND_PRIORITY_EDITOR,
     );
 
-    // 2) Modifier keys (Shift+Enter, Ctrl+ArrowUp, Ctrl+ArrowDown)
+    // 2) Modifier keys: ONLY Ctrl+ArrowUp / Ctrl+ArrowDown
     const unregisterModifiers = editor.registerCommand(
       KEY_MODIFIER_COMMAND,
       (event) => {
-        // --- Shift+Enter: soft-break placeholder ---
-        if (event.key === 'Enter' && event.shiftKey) {
-          // Later we can tighten this to selection.insertLineBreak() in editor.update()
-          event.preventDefault();
-          return true;
-        }
-
         // Helper: find enclosing CalloutNode (if any)
         const findEnclosingCallout = () => {
           const selection = $getSelection();
@@ -120,6 +113,7 @@ export function KeyboardPlugin() {
           return handled;
         }
 
+        // For everything else (including Shift+Enter), let Lexical handle it.
         return false;
       },
       COMMAND_PRIORITY_EDITOR,
