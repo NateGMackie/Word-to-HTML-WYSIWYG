@@ -1,5 +1,10 @@
 // src/nodes/CalloutNode.js
-import { ElementNode, $applyNodeReplacement } from 'lexical';
+import {
+  ElementNode,
+  $applyNodeReplacement,
+  $createParagraphNode,
+  $createTextNode,
+} from 'lexical';
 
 /**
  * kind:
@@ -56,7 +61,6 @@ export class CalloutNode extends ElementNode {
     if (prevNode.__kind !== this.__kind) {
       dom.className = `callout ${this.__getKindClass()}`;
     }
-    // No need for Lexical to diff children via DOM.
     return false;
   }
 
@@ -77,11 +81,8 @@ export class CalloutNode extends ElementNode {
     switch (kind) {
       case 'note':
       case 'warning':
-        // CSS: .callout.note / .callout.warning
-        return kind;
       case 'example':
-        // You already use .example-block in your CSS
-        return 'example-block';
+        return kind;
       case 'blockquote':
         return 'blockquote';
       case 'code':
@@ -125,3 +126,58 @@ export function $createCalloutNode(kind = 'note') {
 export function $isCalloutNode(node) {
   return node instanceof CalloutNode;
 }
+
+/**
+ * Initialize label for note/example callouts:
+ * <p><strong>Note:</strong>▮</p> or <p><strong>Example:</strong>▮</p>
+ *
+ * MVP behavior:
+ * - Only for kind 'note' / 'example'.
+ * - If the callout has no children, create a new <p>.
+ * - If the callout has one empty <p>, reuse it.
+ * - Returns the "space" TextNode so the caller can place the caret there.
+ *
+ * Does NOT modify callouts that already contain real content.
+ */
+export function $initializeCalloutLabel(calloutNode) {
+  const kind = calloutNode.getKind();
+
+  if (kind !== 'note' && kind !== 'example') {
+    return null;
+  }
+
+  let paragraph = null;
+  const firstChild = calloutNode.getFirstChild();
+
+  if (!firstChild) {
+    // No children yet → create a new paragraph
+    paragraph = $createParagraphNode();
+    calloutNode.append(paragraph);
+  } else {
+    // If there's already a child, only proceed if it's an empty paragraph
+    if (
+      typeof firstChild.getType === 'function' &&
+      firstChild.getType() === 'paragraph' &&
+      firstChild.getFirstChild() == null
+    ) {
+      // The callout wraps a blank line: reuse that empty paragraph
+      paragraph = firstChild;
+    } else {
+      // There's already real content here; don't inject a label (beyond MVP)
+      return null;
+    }
+  }
+
+  const labelText = kind === 'note' ? 'Note:' : 'Example:';
+  const labelNode = $createTextNode(labelText);
+  labelNode.toggleFormat('bold'); // <strong>Note:</strong> / <strong>Example:</strong>
+
+  // Space after the label, not bold
+  const spaceNode = $createTextNode(' ');
+
+  paragraph.append(labelNode, spaceNode);
+
+  // Caller can put the caret after this space.
+  return spaceNode;
+}
+

@@ -211,7 +211,7 @@ font-weight: bold;
   border-radius: 4px;
 }
 
-#wysiwygRoot .callout.note {
+#wysiwygRoot .callout.note, .callout.example {
   background-color: #0f172a;
   border-left: 4px solid #3b82f6;
 }
@@ -219,11 +219,6 @@ font-weight: bold;
 #wysiwygRoot .callout.warning {
   background-color: #43302b;
   border-left: 4px solid #f97316;
-}
-
-#wysiwygRoot .callout.example-block {
-  background-color: #111827;
-  border-left: 4px solid #9ca3af;
 }
 
 /* Adjust spacing/indentation inside lists */
@@ -236,7 +231,7 @@ font-weight: bold;
 
 #wysiwygRoot li > .note,
 #wysiwygRoot li > .warning,
-#wysiwygRoot li > .example-block,
+#wysiwygRoot li > .example,
 #wysiwygRoot li > .blockquote {
   margin-top: 0.5em;
 }
@@ -245,10 +240,10 @@ font-weight: bold;
 
 #wysiwygRoot .callout.blockquote {
   background-color: transparent !important;   /* no background */
-  border-left: 4px solid #6b7280;             /* neutral gray line */
+  border-left: 4px solid #3b82f6; 
   padding: 1em;
   margin: 1em 0;
-  color: #e5e7eb;                             /* same text color */
+                             /* same text color */
 }
 
 /* Optional: tweak blockquote’s inner <p> spacing */

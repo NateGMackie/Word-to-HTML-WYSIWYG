@@ -5,26 +5,24 @@ import {
   $getSelection,
   $isRangeSelection,
   $isRootOrShadowRoot,
-  $createParagraphNode, 
+  $createParagraphNode,
 } from 'lexical';
 import {
   $createCalloutNode,
   $isCalloutNode,
+  $initializeCalloutLabel,
 } from '../nodes/CalloutNode.js';
 
 
 // Map the <select> value into our internal "kind"
 function mapValueToKind(raw) {
-  // raw: "callout:note", "callout:warning", "callout:example-block", "callout:remove"
+  // raw: "callout:note", "callout:warning", "callout:example", "callout:remove"
   const [, key] = raw.split(':');
   if (!key) return null;
 
   if (key === 'remove') return 'remove';
 
-  if (key === 'example-block') return 'example';
-
-  // note, warning map 1:1
-  if (key === 'note' || key === 'warning') return key;
+  if (key === 'note' || key === 'example' || key === 'warning') return key;
 
   if (key === 'blockquote') return 'blockquote';
 
@@ -78,20 +76,19 @@ export default function CalloutBridgePlugin() {
         }
 
         // Helper: unwrap a callout (move its children to parent, then remove)
-const unwrapCallout = (callout) => {
-  const parent = callout.getParent();
-  if (!parent) return;
+        const unwrapCallout = (callout) => {
+          const parent = callout.getParent();
+          if (!parent) return;
 
-  const children = callout.getChildren();
+          const children = callout.getChildren();
 
-  // Move each child out, placing it just before the callout
-  children.forEach((child) => {
-    callout.insertBefore(child);
-  });
+          // Move each child out, placing it just before the callout
+          children.forEach((child) => {
+            callout.insertBefore(child);
+          });
 
-  callout.remove();
-};
-
+          callout.remove();
+        };
 
         // CASE 1: We're inside an existing callout
         if (calloutNode) {
@@ -105,38 +102,66 @@ const unwrapCallout = (callout) => {
             unwrapCallout(calloutNode);
           } else {
             calloutNode.setKind(kindKey);
+
+            // If we just turned it into note/example, let the helper decide
+            if (kindKey === 'note' || kindKey === 'example') {
+              const spaceNode = $initializeCalloutLabel(calloutNode);
+              if (spaceNode) {
+                spaceNode.select(1, 1);
+              }
+            }
           }
           return;
         }
 
         // CASE 2: Not in a callout; we only act if we're not removing
-        // CASE 2: Not in a callout; we only act if we're not removing
-if (kindKey === 'remove') {
-  return;
-}
+        if (kindKey === 'remove') {
+          return;
+        }
 
-const anchorNode = selection.anchor.getNode();
-if (!anchorNode) {
-  return;
-}
+        const anchorNode = selection.anchor.getNode();
+        if (!anchorNode) {
+          return;
+        }
 
-const rootLike = $isRootOrShadowRoot(anchorNode) ? anchorNode : anchorNode.getTopLevelElementOrThrow();
-const callout = $createCalloutNode(kindKey);
+        const rootLike = $isRootOrShadowRoot(anchorNode)
+          ? anchorNode
+          : anchorNode.getTopLevelElementOrThrow();
 
-// If we're on the root (empty editor case), create a new <p> inside the callout.
-if ($isRootOrShadowRoot(rootLike)) {
-  const paragraph = $createParagraphNode();
-  rootLike.append(callout);
-  callout.append(paragraph);
-  paragraph.select();
-  return;
-}
+        const callout = $createCalloutNode(kindKey);
 
-// Otherwise, wrap the existing top-level block (paragraph, list, etc.)
-const block = rootLike;
-block.insertBefore(callout);
-callout.append(block);
+        // If we're on the root (empty editor case)
+        if ($isRootOrShadowRoot(rootLike)) {
+          rootLike.append(callout);
 
+          if (kindKey === 'note' || kindKey === 'example') {
+            const spaceNode = $initializeCalloutLabel(callout);
+            if (spaceNode) {
+              spaceNode.select(1, 1); // caret after "Note: " / "Example: "
+            }
+          } else {
+            const paragraph = $createParagraphNode();
+            callout.append(paragraph);
+            paragraph.select();
+          }
+
+          return;
+        }
+
+        // Otherwise, wrap the existing top-level block (paragraph, list, etc.)
+        const block = rootLike;
+        block.insertBefore(callout);
+        callout.append(block);
+
+        // MVP: if this is note/example and the wrapped block is a blank line,
+        // $initializeCalloutLabel will insert the label. If the block has text,
+        // the helper will no-op.
+        if (kindKey === 'note' || kindKey === 'example') {
+          const spaceNode = $initializeCalloutLabel(callout);
+          if (spaceNode) {
+            spaceNode.select(1, 1);
+          }
+        }
       });
 
       editor.focus();
