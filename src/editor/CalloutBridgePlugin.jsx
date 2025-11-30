@@ -6,7 +6,12 @@ import {
   $isRangeSelection,
   $isRootOrShadowRoot,
   $createParagraphNode,
+  $isElementNode,
+  $isTextNode,
+  $getRoot,
+  $isParagraphNode,
 } from 'lexical';
+
 import {
   $createCalloutNode,
   $isCalloutNode,
@@ -80,45 +85,94 @@ export default function CalloutBridgePlugin() {
           node = node.getParent();
         }
 
-        // Helper: unwrap a callout (move its children to parent, then remove)
-        const unwrapCallout = (callout) => {
-          const parent = callout.getParent();
-          if (!parent) return;
+// Helper: remove the "Note:" / "Example:" label prefix from the first paragraph
 
-          const children = callout.getChildren();
 
-          children.forEach((child) => {
-            callout.insertBefore(child);
-          });
 
-          callout.remove();
-        };
+        // Helper: unwrap a callout (move its children to parent, normalize inline nodes)
+const unwrapCallout = (callout) => {
+  const parent = callout.getParent();
+  if (!parent) return;
+
+  const children = callout.getChildren();
+  const nodesToInsert = [];
+
+  children.forEach((child) => {
+    if ($isElementNode(child)) {
+      nodesToInsert.push(child);
+    } else if ($isTextNode(child)) {
+      const paragraph = $createParagraphNode();
+      paragraph.append(child);
+      nodesToInsert.push(paragraph);
+    } else {
+      const paragraph = $createParagraphNode();
+      paragraph.append(child);
+      nodesToInsert.push(paragraph);
+    }
+  });
+
+  if (nodesToInsert.length === 0) {
+    const paragraph = $createParagraphNode();
+    callout.insertBefore(paragraph);
+    callout.remove();
+    return;
+  }
+
+  nodesToInsert.forEach((node) => {
+    callout.insertBefore(node);
+  });
+
+  callout.remove();
+};
+
+// Helper: after unwrapping, remove top-level "Note:" / "Example:" paragraphs and empty paragraphs
+const cleanupTopLevelLabelParagraphs = () => {
+  const root = $getRoot();
+  const children = root.getChildren();
+
+  children.forEach((child) => {
+    if ($isParagraphNode(child)) {
+      const text = (child.getTextContent() || '').trim();
+
+      // Remove label-only paragraphs and empty paragraphs
+      if (text === 'Note:' || text === 'Example:' || text === '') {
+        child.remove();
+      }
+    }
+  });
+};
+
+
+
 
         // CASE 1: We're inside an existing callout
-        if (calloutNode) {
-          if (kindKey === 'remove') {
-            unwrapCallout(calloutNode);
-            return;
-          }
+if (calloutNode) {
+  if (kindKey === 'remove') {
+    unwrapCallout(calloutNode);
+    cleanupTopLevelLabelParagraphs();
+    return;
+  }
 
-          if (calloutNode.getKind() === kindKey) {
-            // Toggle off if same kind
-            unwrapCallout(calloutNode);
-          } else {
-            // Switch kind
-            calloutNode.setKind(kindKey);
+  if (calloutNode.getKind() === kindKey) {
+    // Toggle off if same kind
+    unwrapCallout(calloutNode);
+    cleanupTopLevelLabelParagraphs();
+  } else {
+    // Switch kind
+    calloutNode.setKind(kindKey);
 
-            if (kindKey === 'note' || kindKey === 'example') {
-              const wasEmpty = calloutNode.getFirstChild() == null;
-              const spaceNode = $initializeCalloutLabel(calloutNode);
-              // Only move the caret if we just created a blank labeled callout
-              if (wasEmpty && spaceNode) {
-                spaceNode.select(1, 1);
-              }
-            }
-          }
-          return;
-        }
+    if (kindKey === 'note' || kindKey === 'example') {
+      const wasEmpty = calloutNode.getFirstChild() == null;
+      const spaceNode = $initializeCalloutLabel(calloutNode);
+      // Only move the caret if we just created a blank labeled callout
+      if (wasEmpty && spaceNode) {
+        spaceNode.select(1, 1);
+      }
+    }
+  }
+  return;
+}
+
 
         // CASE 2: Not in a callout; ignore if we're removing
         if (kindKey === 'remove') {
