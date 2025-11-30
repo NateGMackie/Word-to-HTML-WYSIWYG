@@ -7,16 +7,14 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { $getRoot } from 'lexical';
 import { $generateHtmlFromNodes } from '@lexical/html';
 
 import { editorConfig } from './lexicalConfig.js';
+import InitialParagraphPlugin from './InitialParagraphPlugin';
 import ToolbarBridgePlugin from './ToolbarBridgePlugin.jsx';
 import HeadingBridgePlugin from './HeadingBridgePlugin.jsx';
 import CalloutBridgePlugin from './CalloutBridgePlugin.jsx';
 import { KeyboardPlugin } from '../plugins/KeyboardPlugin.js';
-
-
 
 function Placeholder() {
   return (
@@ -42,6 +40,10 @@ export default function WysiwygEditor({ onHtmlChange }) {
           placeholder={<Placeholder />}
         />
 
+        {/* Make sure the editor never has an empty root:
+            this creates an initial <p> and selects it on load */}
+        <InitialParagraphPlugin />
+
         <HistoryPlugin />
         <ListPlugin />
         <LinkPlugin />
@@ -65,4 +67,3 @@ export default function WysiwygEditor({ onHtmlChange }) {
     </LexicalComposer>
   );
 }
-

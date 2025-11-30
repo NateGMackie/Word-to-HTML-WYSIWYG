@@ -63,8 +63,13 @@ export default function CalloutBridgePlugin() {
           return;
         }
 
-        // Find nearest Callout ancestor, if any
-        let node = selection.anchor.getNode();
+        const anchorNode = selection.anchor.getNode();
+        if (!anchorNode) {
+          return;
+        }
+
+        // --- 0. Check if we're inside an existing callout ---
+        let node = anchorNode;
         let calloutNode = null;
 
         while (node && !$isRootOrShadowRoot(node)) {
@@ -82,7 +87,6 @@ export default function CalloutBridgePlugin() {
 
           const children = callout.getChildren();
 
-          // Move each child out, placing it just before the callout
           children.forEach((child) => {
             callout.insertBefore(child);
           });
@@ -97,16 +101,18 @@ export default function CalloutBridgePlugin() {
             return;
           }
 
-          // Toggle off if same kind; otherwise switch kind
           if (calloutNode.getKind() === kindKey) {
+            // Toggle off if same kind
             unwrapCallout(calloutNode);
           } else {
+            // Switch kind
             calloutNode.setKind(kindKey);
 
-            // If we just turned it into note/example, let the helper decide
             if (kindKey === 'note' || kindKey === 'example') {
+              const wasEmpty = calloutNode.getFirstChild() == null;
               const spaceNode = $initializeCalloutLabel(calloutNode);
-              if (spaceNode) {
+              // Only move the caret if we just created a blank labeled callout
+              if (wasEmpty && spaceNode) {
                 spaceNode.select(1, 1);
               }
             }
@@ -114,16 +120,109 @@ export default function CalloutBridgePlugin() {
           return;
         }
 
-        // CASE 2: Not in a callout; we only act if we're not removing
+        // CASE 2: Not in a callout; ignore if we're removing
         if (kindKey === 'remove') {
           return;
         }
 
-        const anchorNode = selection.anchor.getNode();
-        if (!anchorNode) {
-          return;
+        // ----- 2a. Step-level callout inside a list-item (collapsed selection only, priority) -----
+        if (selection.isCollapsed()) {
+          let listItemNode = anchorNode;
+          while (listItemNode && !$isRootOrShadowRoot(listItemNode)) {
+            if (
+              typeof listItemNode.getType === 'function' &&
+              listItemNode.getType() === 'listitem'
+            ) {
+              break;
+            }
+            listItemNode = listItemNode.getParent();
+          }
+
+          if (
+            listItemNode &&
+            typeof listItemNode.getType === 'function' &&
+            listItemNode.getType() === 'listitem'
+          ) {
+            // We're inside a list-item → create a step-level callout as a child of that list-item.
+            // Find the immediate child of the list-item that contains the anchor.
+            let innerBlock = anchorNode;
+            while (
+              innerBlock &&
+              innerBlock.getParent() !== listItemNode &&
+              !$isRootOrShadowRoot(innerBlock)
+            ) {
+              innerBlock = innerBlock.getParent();
+            }
+
+            if (innerBlock && innerBlock.getParent() === listItemNode) {
+              const callout = $createCalloutNode(kindKey);
+              // Insert the callout after the current block inside the list-item
+              innerBlock.insertAfter(callout);
+
+              if (kindKey === 'note' || kindKey === 'example') {
+                const wasEmpty = callout.getFirstChild() == null;
+                const spaceNode = $initializeCalloutLabel(callout);
+                if (wasEmpty && spaceNode) {
+                  spaceNode.select(1, 1);
+                }
+              } else {
+                const paragraph = $createParagraphNode();
+                callout.append(paragraph);
+                paragraph.select();
+              }
+
+              return;
+            }
+            // If we couldn't resolve a sane innerBlock, we fall through to the generic behavior.
+          }
         }
 
+        // ----- 2b. Multi-select at root level (wrap multiple top-level siblings) -----
+        if (!selection.isCollapsed()) {
+          const anchorBlock =
+            anchorNode.getTopLevelElementOrThrow();
+          const focusBlock =
+            selection.focus.getNode().getTopLevelElementOrThrow();
+
+          // Multi-wrap only when selection truly spans >1 top-level block
+          if (anchorBlock !== focusBlock) {
+            const parent = anchorBlock.getParent();
+            const sameParent = parent && parent === focusBlock.getParent();
+
+            if (sameParent && $isRootOrShadowRoot(parent)) {
+              // Determine first/last block in document order
+              const anchorBeforeFocus = anchorBlock.isBefore(focusBlock);
+              const firstBlock = anchorBeforeFocus ? anchorBlock : focusBlock;
+              const lastBlock = anchorBeforeFocus ? focusBlock : anchorBlock;
+
+              const callout = $createCalloutNode(kindKey);
+              firstBlock.insertBefore(callout);
+
+              // Move all siblings from firstBlock through lastBlock into the callout
+              let current = firstBlock;
+              while (current) {
+                const next = current.getNextSibling();
+                callout.append(current);
+                if (current === lastBlock) break;
+                current = next;
+              }
+
+              if (kindKey === 'note' || kindKey === 'example') {
+                const wasEmpty = callout.getFirstChild() == null;
+                const spaceNode = $initializeCalloutLabel(callout);
+                // In this multi-block case, callout won't be empty, so we won't move the caret.
+                if (wasEmpty && spaceNode) {
+                  spaceNode.select(1, 1);
+                }
+              }
+
+              return;
+            }
+          }
+          // If selection spans a single block or a non-root parent, we don't do multi-select; fall through.
+        }
+
+        // ----- 2c. Generic single-block behavior (your original logic) -----
         const rootLike = $isRootOrShadowRoot(anchorNode)
           ? anchorNode
           : anchorNode.getTopLevelElementOrThrow();
@@ -135,9 +234,10 @@ export default function CalloutBridgePlugin() {
           rootLike.append(callout);
 
           if (kindKey === 'note' || kindKey === 'example') {
+            const wasEmpty = callout.getFirstChild() == null;
             const spaceNode = $initializeCalloutLabel(callout);
-            if (spaceNode) {
-              spaceNode.select(1, 1); // caret after "Note: " / "Example: "
+            if (wasEmpty && spaceNode) {
+              spaceNode.select(1, 1); // caret after label for a blank callout
             }
           } else {
             const paragraph = $createParagraphNode();
@@ -153,12 +253,11 @@ export default function CalloutBridgePlugin() {
         block.insertBefore(callout);
         callout.append(block);
 
-        // MVP: if this is note/example and the wrapped block is a blank line,
-        // $initializeCalloutLabel will insert the label. If the block has text,
-        // the helper will no-op.
         if (kindKey === 'note' || kindKey === 'example') {
+          const wasEmpty = callout.getFirstChild() == null;
           const spaceNode = $initializeCalloutLabel(callout);
-          if (spaceNode) {
+          // Here we're wrapping existing content → callout has children → wasEmpty is false → caret stays put.
+          if (wasEmpty && spaceNode) {
             spaceNode.select(1, 1);
           }
         }

@@ -128,16 +128,15 @@ export function $isCalloutNode(node) {
 }
 
 /**
- * Initialize label for note/example callouts:
- * <p><strong>Note:</strong>▮</p> or <p><strong>Example:</strong>▮</p>
+ * Ensure label for note/example callouts.
  *
- * MVP behavior:
- * - Only for kind 'note' / 'example'.
- * - If the callout has no children, create a new <p>.
- * - If the callout has one empty <p>, reuse it.
- * - Returns the "space" TextNode so the caller can place the caret there.
+ * Handles:
+ * - Callout with no children          → create <p><strong>Note:&nbsp;</strong>▮</p>
+ * - Callout with one empty <p>        → reuse that <p> and add the label
+ * - Callout with <p> that has text    → prepend <strong>Note:&nbsp;</strong> before existing content
+ * - Callout whose first child is list → insert a new label <p> before the list (inside the callout)
  *
- * Does NOT modify callouts that already contain real content.
+ * Returns the "space" TextNode after the label so the caller can place the caret there.
  */
 export function $initializeCalloutLabel(calloutNode) {
   const kind = calloutNode.getKind();
@@ -146,38 +145,98 @@ export function $initializeCalloutLabel(calloutNode) {
     return null;
   }
 
-  let paragraph = null;
-  const firstChild = calloutNode.getFirstChild();
+  const labelText = kind === 'note' ? 'Note:\u00A0' : 'Example:\u00A0';
+  const children = calloutNode.getChildren();
+  let firstBlock = children[0];
 
-  if (!firstChild) {
-    // No children yet → create a new paragraph
-    paragraph = $createParagraphNode();
-    calloutNode.append(paragraph);
-  } else {
-    // If there's already a child, only proceed if it's an empty paragraph
-    if (
-      typeof firstChild.getType === 'function' &&
-      firstChild.getType() === 'paragraph' &&
-      firstChild.getFirstChild() == null
-    ) {
-      // The callout wraps a blank line: reuse that empty paragraph
-      paragraph = firstChild;
+  // Helper: create <p><strong>Label:&nbsp;</strong>␣</p>
+  // If beforeNode is provided, insert it as a sibling before that node.
+  // Otherwise append to the callout.
+  const createLabelParagraph = (beforeNode = null) => {
+    const paragraph = $createParagraphNode();
+
+    const labelNode = $createTextNode(labelText);
+    labelNode.toggleFormat('bold'); // <strong>Label:&nbsp;</strong>
+
+    const spaceNode = $createTextNode(' ');
+
+    paragraph.append(labelNode, spaceNode);
+
+    if (beforeNode) {
+      // Insert as previous sibling of `beforeNode` (inside same parent = callout)
+      beforeNode.insertBefore(paragraph);
     } else {
-      // There's already real content here; don't inject a label (beyond MVP)
-      return null;
+      calloutNode.append(paragraph);
     }
+
+    return spaceNode;
+  };
+
+  // If no children at all → just make a label paragraph.
+  if (!firstBlock) {
+    return createLabelParagraph();
   }
 
-  const labelText = kind === 'note' ? 'Note:' : 'Example:';
-  const labelNode = $createTextNode(labelText);
-  labelNode.toggleFormat('bold'); // <strong>Note:</strong> / <strong>Example:</strong>
+  const type =
+    typeof firstBlock.getType === 'function' ? firstBlock.getType() : null;
 
-  // Space after the label, not bold
-  const spaceNode = $createTextNode(' ');
+  // Case A: First block is a paragraph
+  if (type === 'paragraph') {
+    const paragraph = firstBlock;
+    const firstInline = paragraph.getFirstChild();
 
-  paragraph.append(labelNode, spaceNode);
+    // Check if there's already a bold "Note:" / "Example:" at the start
+    if (
+      firstInline &&
+      typeof firstInline.getType === 'function' &&
+      firstInline.getType() === 'text' &&
+      firstInline.getTextContent() === labelText &&
+      typeof firstInline.hasFormat === 'function' &&
+      firstInline.hasFormat('bold')
+    ) {
+      // There is already a bold label; ensure there's a space after it and return that.
+      let spaceNode = firstInline.getNextSibling();
+      if (
+        !spaceNode ||
+        spaceNode.getType() !== 'text' ||
+        !spaceNode.getTextContent().startsWith(' ')
+      ) {
+        spaceNode = $createTextNode(' ');
+        paragraph.insertAfter(spaceNode, firstInline);
+      }
+      return spaceNode;
+    }
 
-  // Caller can put the caret after this space.
-  return spaceNode;
+    // If the paragraph is empty → just append label + space.
+    if (!firstInline) {
+      const labelNode = $createTextNode(labelText);
+      labelNode.toggleFormat('bold');
+
+      const spaceNode = $createTextNode(' ');
+
+      paragraph.append(labelNode, spaceNode);
+      return spaceNode;
+    }
+
+    // Paragraph has existing content, no label → prepend label before existing content.
+    const originalFirst = firstInline;
+
+    const labelNode = $createTextNode(labelText);
+    labelNode.toggleFormat('bold');
+
+    const spaceNode = $createTextNode(' ');
+
+    paragraph.insertBefore(labelNode, originalFirst);
+    paragraph.insertBefore(spaceNode, originalFirst);
+
+    return spaceNode;
+  }
+
+  // Case B: First block is a list → insert a label paragraph before the list (inside callout)
+  if (type === 'list') {
+    return createLabelParagraph(firstBlock);
+  }
+
+  // Case C: Any other block type → be conservative, but still keep label inside callout
+  return createLabelParagraph(firstBlock);
 }
-
