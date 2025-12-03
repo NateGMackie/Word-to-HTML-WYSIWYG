@@ -6,13 +6,13 @@ import {
   $createTextNode,
 } from 'lexical';
 
+const ALLOWED_KINDS = ['note', 'warning', 'example'];
+
 /**
  * kind:
  *  - 'note'
  *  - 'warning'
  *  - 'example'
- *  - 'blockquote' (later)
- *  - 'code'       (later)
  */
 export class CalloutNode extends ElementNode {
   /** @returns {'callout'} */
@@ -26,14 +26,21 @@ export class CalloutNode extends ElementNode {
 
   constructor(kind = 'note', key) {
     super(key);
-    this.__kind = kind;
+    this.__kind = ALLOWED_KINDS.includes(kind) ? kind : 'note';
+  }
+
+  setKind(kind) {
+    const writable = this.getWritable();
+    writable.__kind = ALLOWED_KINDS.includes(kind) ? kind : 'note';
   }
 
   // ---- Serialization ----
 
   static importJSON(serializedNode) {
     const { kind = 'note' } = serializedNode;
-    const node = new CalloutNode(kind);
+    const node = new CalloutNode(
+      ALLOWED_KINDS.includes(kind) ? kind : 'note',
+    );
     node.setFormat(serializedNode.format);
     node.setIndent(serializedNode.indent);
     node.setDirection(serializedNode.direction);
@@ -58,9 +65,14 @@ export class CalloutNode extends ElementNode {
   }
 
   updateDOM(prevNode, dom) {
-    if (prevNode.__kind !== this.__kind) {
+    const prevKind = prevNode.__kind;
+    const nextKind = this.__kind;
+
+    if (prevKind !== nextKind) {
       dom.className = `callout ${this.__getKindClass()}`;
     }
+
+    // We always use a <div>, so no need to recreate the DOM element.
     return false;
   }
 
@@ -71,11 +83,6 @@ export class CalloutNode extends ElementNode {
     return self.__kind;
   }
 
-  setKind(kind) {
-    const writable = this.getWritable();
-    writable.__kind = kind;
-  }
-
   __getKindClass() {
     const kind = this.getKind();
     switch (kind) {
@@ -83,10 +90,6 @@ export class CalloutNode extends ElementNode {
       case 'warning':
       case 'example':
         return kind;
-      case 'blockquote':
-        return 'blockquote';
-      case 'code':
-        return 'code';
       default:
         return 'note';
     }
@@ -102,17 +105,9 @@ export class CalloutNode extends ElementNode {
     return null;
   }
 
-  exportDOM() {
-    // For now: non-code callouts only.
-    const kind = this.getKind();
-
-    const element =
-      kind === 'blockquote'
-        ? document.createElement('blockquote')
-        : document.createElement('div');
-
+  exportDOM(editor) {
+    const element = document.createElement('div');
     element.className = `callout ${this.__getKindClass()}`;
-
     return { element };
   }
 }

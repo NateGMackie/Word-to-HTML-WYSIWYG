@@ -417,7 +417,7 @@ export function initWysiwygView({ elements, docState }) {
   // if (!v) return;
 
   // --- Block formats (p, h1, h2, h3, etc.) ---
-  // Let Lexical's HeadingBridgePlugin handle these.
+  // Let Lexical's BlockFormatBridgePlugin handle these.
   // if (v.startsWith('block:')) {
     // Optionally reset the dropdown; Lexical also resets it.
   //   stylesSelect.selectedIndex = 0;

@@ -1,9 +1,9 @@
 // src/editor/lexicalConfig.js
-import {ParagraphNode, TextNode,} from 'lexical';
-import {HeadingNode,} from '@lexical/rich-text';
-import { AutoLinkNode } from '@lexical/link';
-import { LinkNode } from '@lexical/link';
-import {ListNode, ListItemNode,} from '@lexical/list';
+import { ParagraphNode, TextNode, } from 'lexical';
+import { HeadingNode, QuoteNode } from '@lexical/rich-text';
+import { CodeNode /*, CodeHighlightNode */ } from '@lexical/code';
+import { AutoLinkNode, LinkNode } from '@lexical/link';
+import { ListNode, ListItemNode, } from '@lexical/list';
 // src/editor/lexicalConfig.js
 import { CalloutNode } from '../nodes/CalloutNode.js';
 
@@ -35,11 +35,21 @@ export const editorConfig = {
     ParagraphNode,
     TextNode,
     HeadingNode,
+    QuoteNode,
+    // Lists
     ListNode,
     ListItemNode,
+
+    // Links
     LinkNode,
+    // AutoLinkNode, // uncomment if/when you add the AutoLinkPlugin
+
+    // Code
+    CodeNode,
+    // CodeHighlightNode, // optional, if you later wire in a code highlight plugin
+
     // Custom blocks
-  CalloutNode,
+    CalloutNode,
 
   ],
 };

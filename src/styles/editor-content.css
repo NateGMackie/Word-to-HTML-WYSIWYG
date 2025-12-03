@@ -1,5 +1,5 @@
 /*-------------------------------------
-  0. Scope – ONLY affect WYSIWYG content
+  Scope – ONLY affect WYSIWYG content
 -------------------------------------*/
 
 #wysiwygRoot {
@@ -15,7 +15,7 @@
 }
 
 /*-------------------------------------
-  2. Headings
+  Headings
   (ported from your doc CSS, but scoped + slightly tweaked for dark UI)
 -------------------------------------*/
 
@@ -43,7 +43,7 @@
 }
 
 /*-------------------------------------
-  3. Paragraphs
+  Paragraphs
 -------------------------------------*/
 
 #wysiwygRoot p {
@@ -51,7 +51,7 @@
 }
 
 /*-------------------------------------
- 4. Lists (same structure as your ServiceNow-friendly CSS) 
+ Lists (same structure as your ServiceNow-friendly CSS) 
  -------------------------------------*/ 
  /* #wysiwygRoot ul, 
  #wysiwygRoot ol { 
@@ -151,7 +151,7 @@ font-weight: bold;
 }
 
 /*-------------------------------------
-  5. Tables
+  Tables
 -------------------------------------*/
 
 #wysiwygRoot table {
@@ -174,19 +174,14 @@ font-weight: bold;
 }
 
 /*-------------------------------------
-  6. Code Blocks
+  Code Blocks
 -------------------------------------*/
 
-#wysiwygRoot pre {
-  background: #111827;
-  padding: 10px;
-  border-radius: 4px;
-  font-family: Consolas, Menlo, Monaco, monospace;
-  font-size: 13px;
-}
+
+
 
 /*-------------------------------------
-  7. Links
+  Links
 -------------------------------------*/
 
 #wysiwygRoot a {
@@ -199,13 +194,14 @@ font-weight: bold;
 }
 
 /*-------------------------------------
-  8. Callouts (Note, Warning, Example)
+  Callouts (Note, Warning, Example)
   (same semantics, colors nudged for dark background)
 -------------------------------------*/
 
-#wysiwygRoot .callout {
+#wysiwygRoot .callout, 
+#wysiwygRoot blockquote{
   padding: 1em;
-  margin: 1em 0;
+  margin: 12px 0;
   white-space: normal;
   box-sizing: border-box;
   border-radius: 4px;
@@ -222,7 +218,7 @@ font-weight: bold;
 }
 
 /* Adjust spacing/indentation inside lists */
-#wysiwygRoot li .callout {
+#wysiwygRoot li .callout, #wysiwygRoot li blockquote {
   text-indent: 0;
   padding-left: 1em;
   margin-left: 0;
@@ -232,28 +228,44 @@ font-weight: bold;
 #wysiwygRoot li > .note,
 #wysiwygRoot li > .warning,
 #wysiwygRoot li > .example,
-#wysiwygRoot li > .blockquote {
+#wysiwygRoot li > blockquote {
   margin-top: 0.5em;
 }
 
 /* blockquote style callout */
 
-#wysiwygRoot .callout.blockquote {
+#wysiwygRoot blockquote {
   background-color: transparent !important;   /* no background */
   border-left: 4px solid #3b82f6; 
-  padding: 1em;
-  margin: 1em 0;
-                             /* same text color */
 }
 
 /* Optional: tweak blockquote’s inner <p> spacing */
-#wysiwygRoot .callout.blockquote p {
+#wysiwygRoot blockquote p {
   margin: 0.4em 0;
 }
 
+/*-------------------------------------
+  Code Blocks (block-level)
+  - Lexical editor: bare <code spellcheck="false">
+  - HTML view: <pre>
+-------------------------------------*/
+
+#wysiwygRoot pre,
+#wysiwygRoot .w2h-editor code[spellcheck="false"] {
+  display: block;
+  background: #111827;
+  border-left: 4px solid #9ca3af;   /* gray variant of callout border */
+  font-family: Consolas, Menlo, Monaco, monospace;
+  font-size: 13px;
+  padding: 0.75rem 1rem;            /* same feel as callouts */
+  margin: 12px 0;                   /* same vertical spacing as callouts */
+  white-space: pre-wrap;            /* preserve formatting, but wrap long lines */
+  box-sizing: border-box;
+  border-radius: 4px;
+}
 
 /*-------------------------------------
-  9. User Input Formatting
+  User Input Formatting
 -------------------------------------*/
 
 #wysiwygRoot .user-input {
@@ -270,7 +282,7 @@ font-weight: bold;
 }
 
 /*-------------------------------------
-  10. Screenshots
+  Screenshots
 -------------------------------------*/
 
 #wysiwygRoot .screenshot {
@@ -282,7 +294,7 @@ font-weight: bold;
 }
 
 /*-------------------------------------
-  11. DRAFT watermark
+  DRAFT watermark
   (only applied if you explicitly add .draft to the editor)
 -------------------------------------*/
 
