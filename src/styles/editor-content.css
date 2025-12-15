@@ -276,6 +276,13 @@ font-weight: bold;
   color: #f9fafb;
 }
 
+/* Base variable styling (even if not nested) */
+#wysiwygRoot .variable {
+  font-style: italic;
+  color: #e5e7eb;
+}
+
+/* Nested variable gets the same styling but keeps the cascade explicit */
 #wysiwygRoot .user-input .variable {
   font-style: italic;
   color: #e5e7eb;

@@ -3,9 +3,10 @@ import React from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import {
   KEY_ENTER_COMMAND,
-    KEY_TAB_COMMAND,
+  KEY_TAB_COMMAND,
   INDENT_CONTENT_COMMAND,
   OUTDENT_CONTENT_COMMAND,
+  KEY_MODIFIER_COMMAND,
   COMMAND_PRIORITY_LOW,
   $getSelection,
   $isRangeSelection,
@@ -155,9 +156,90 @@ export function KeyboardPlugin() {
       COMMAND_PRIORITY_LOW,
     );
 
+        // LOW priority: Ctrl+ArrowUp / Ctrl+ArrowDown → escape out of a callout
+    const unregisterCalloutEscape = editor.registerCommand(
+      KEY_MODIFIER_COMMAND,
+      (event) => {
+        // Only handle real keyboard events
+        if (!event) return false;
+
+        // We care about: Ctrl+ArrowUp / Ctrl+ArrowDown (no other modifiers)
+        if (!event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) {
+          return false;
+        }
+
+        const isUp = event.key === 'ArrowUp';
+        const isDown = event.key === 'ArrowDown';
+
+        if (!isUp && !isDown) {
+          return false;
+        }
+
+        let handled = false;
+
+        editor.update(() => {
+          const selection = $getSelection();
+          if (!$isRangeSelection(selection)) return;
+          if (!selection.isCollapsed()) return;
+
+          // Walk up from the caret to find an enclosing CalloutNode
+          let node = selection.anchor.getNode();
+          let calloutNode = null;
+
+          while (node && !$isRootOrShadowRoot(node)) {
+            if ($isCalloutNode(node)) {
+              calloutNode = node;
+              break;
+            }
+            node = node.getParent();
+          }
+
+          if (!calloutNode) {
+            // Not inside a callout → let Lexical/default behavior run
+            return;
+          }
+
+          const parent = calloutNode.getParent();
+          if (!parent) {
+            return;
+          }
+
+          const targetSibling = isUp
+            ? calloutNode.getPreviousSibling()
+            : calloutNode.getNextSibling();
+
+          event.preventDefault();
+
+          if (targetSibling) {
+            // Move caret into existing sibling block
+            targetSibling.select();
+            handled = true;
+            return;
+          }
+
+          // No sibling in that direction → create a new paragraph
+          const paragraph = $createParagraphNode();
+
+          if (isUp) {
+            calloutNode.insertBefore(paragraph);
+          } else {
+            calloutNode.insertAfter(paragraph);
+          }
+
+          paragraph.select();
+          handled = true;
+        });
+
+        return handled;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+
+
     return () => {
       unregisterEnterCleanup();
       unregisterTabIndent();
+      unregisterCalloutEscape();
     };
   }, [editor]);
 

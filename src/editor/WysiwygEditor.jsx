@@ -14,6 +14,7 @@ import InitialParagraphPlugin from './InitialParagraphPlugin';
 import ToolbarBridgePlugin from './ToolbarBridgePlugin.jsx';
 import BlockFormatBridgePlugin from './BlockFormatBridgePlugin.jsx';
 import CalloutBridgePlugin from './CalloutBridgePlugin.jsx';
+import InlineFormatBridgePlugin from './InlineFormatBridgePlugin.jsx';
 import { KeyboardPlugin } from '../plugins/KeyboardPlugin.js';
 
 function Placeholder() {
@@ -129,6 +130,7 @@ export default function WysiwygEditor({ onHtmlChange }) {
         <ToolbarBridgePlugin />
         <BlockFormatBridgePlugin />
         <CalloutBridgePlugin />
+        <InlineFormatBridgePlugin />
         <KeyboardPlugin />
       </div>
     </LexicalComposer>

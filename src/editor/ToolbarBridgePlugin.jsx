@@ -25,8 +25,9 @@ export default function ToolbarBridgePlugin() {
         editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
       };
 
-      btn.addEventListener('click', handler);
-      return () => btn.removeEventListener('click', handler);
+      btn.addEventListener('mousedown', handler);
+return () => btn.removeEventListener('mousedown', handler);
+
     }
 
     function hookLinkButton(selector) {
@@ -50,8 +51,9 @@ export default function ToolbarBridgePlugin() {
         editor.dispatchCommand(TOGGLE_LINK_COMMAND, payload);
       };
 
-      btn.addEventListener('click', handler);
-      return () => btn.removeEventListener('click', handler);
+      btn.addEventListener('mousedown', handler);
+return () => btn.removeEventListener('mousedown', handler);
+
     }
 
     function hookUnlinkButton(selector) {
@@ -64,8 +66,9 @@ export default function ToolbarBridgePlugin() {
         editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
       };
 
-      btn.addEventListener('click', handler);
-      return () => btn.removeEventListener('click', handler);
+      btn.addEventListener('mousedown', handler);
+return () => btn.removeEventListener('mousedown', handler);
+
     }
 
     function hookListButton(selector, command) {
@@ -78,8 +81,9 @@ export default function ToolbarBridgePlugin() {
         editor.dispatchCommand(command, undefined);
       };
 
-      btn.addEventListener('click', handler);
-      return () => btn.removeEventListener('click', handler);
+      btn.addEventListener('mousedown', handler);
+return () => btn.removeEventListener('mousedown', handler);
+
     }
 
     // NEW: generic indent/outdent commands from Lexical core
@@ -93,8 +97,35 @@ export default function ToolbarBridgePlugin() {
         editor.dispatchCommand(command, undefined);
       };
 
-      btn.addEventListener('click', handler);
-      return () => btn.removeEventListener('click', handler);
+      btn.addEventListener('mousedown', handler);
+return () => btn.removeEventListener('mousedown', handler);
+
+    }
+
+        // NEW: inline formatting via InlineFormatBridgePlugin
+    function hookInlineFormatButton(selector, bridgeMethodName) {
+      const btn = document.querySelector(selector);
+      if (!btn) return null;
+
+      const handler = (event) => {
+        event.preventDefault();
+        editor.focus();
+
+        const bridge = window.w2hInlineFormatBridge;
+        if (!bridge || typeof bridge[bridgeMethodName] !== 'function') {
+          console.warn(
+            'InlineFormatBridgePlugin not ready or method missing:',
+            bridgeMethodName,
+          );
+          return;
+        }
+
+        bridge[bridgeMethodName]();
+      };
+
+      btn.addEventListener('mousedown', handler);
+return () => btn.removeEventListener('mousedown', handler);
+
     }
 
     const cleanups = [
@@ -117,6 +148,11 @@ export default function ToolbarBridgePlugin() {
       // NEW: List/paragraph indentation (nested lists)
       hookIndentButton('#btnIndent', INDENT_CONTENT_COMMAND),
       hookIndentButton('#btnOutdent', OUTDENT_CONTENT_COMMAND),
+    
+
+    // NEW: User Input / Variable (InlineFormatBridgePlugin)
+      hookInlineFormatButton('#btnUserInput', 'wrapSelectionWithUserInput'),
+      hookInlineFormatButton('#btnVariable', 'wrapSelectionWithVariable'),
     ].filter(Boolean);
 
     return () => {

@@ -1,12 +1,12 @@
 // src/editor/lexicalConfig.js
-import { ParagraphNode, TextNode, } from 'lexical';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { CodeNode /*, CodeHighlightNode */ } from '@lexical/code';
 import { AutoLinkNode, LinkNode } from '@lexical/link';
 import { ListNode, ListItemNode, } from '@lexical/list';
 // src/editor/lexicalConfig.js
-import { CalloutNode } from '../nodes/CalloutNode.js';
-
+// import { CalloutNode } from '../nodes/CalloutNode.js';
+import { UserInputNode } from '../nodes/UserInputNode.js';
+import { VariableNode } from '../nodes/VariableNode.js';
 
 
 // Basic theme classes. We can align these to your CSS later.
@@ -27,13 +27,13 @@ export const editorConfig = {
     },
 
     link: 'w2h-link',
+    userInput: 'user-input',
+    variable: 'variable',
   },
   onError(error) {
     throw error;
   },
   nodes: [
-    ParagraphNode,
-    TextNode,
     HeadingNode,
     QuoteNode,
     // Lists
@@ -49,7 +49,11 @@ export const editorConfig = {
     // CodeHighlightNode, // optional, if you later wire in a code highlight plugin
 
     // Custom blocks
-    CalloutNode,
+    // CalloutNode,
+
+    // User input
+    UserInputNode,
+    VariableNode,
 
   ],
 };
