@@ -16,9 +16,9 @@ export function initHotkeys({ setActiveView, wysiwygCommand }) {
     }
 
     // WYSIWYG shortcuts (only when focus is in editor)
-    const active = document.activeElement;
-    const inEditor =
-      active && (active.id === 'wysiwyg' || active.closest?.('#wysiwyg'));
+   // const active = document.activeElement;
+   // const inEditor =
+   //   active && (active.id === 'wysiwyg' || active.closest?.('#wysiwyg'));
 
     if (!inEditor) return;
 

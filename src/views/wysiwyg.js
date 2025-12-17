@@ -49,12 +49,12 @@ export function initWysiwygView({ elements, docState }) {
     });
   }
 
-  function command(cmd, val = null) {
-    document.execCommand(cmd, false, val);
-    normalizeInline();
-    normalizeBlocks();
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
-  }
+   function command(cmd, val = null) {
+     document.execCommand(cmd, false, val);
+     normalizeInline();
+     normalizeBlocks();
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+   }
 
   // ---- Block formatting / styles ----
   function setBlockFormat(tag) {
@@ -80,8 +80,8 @@ export function initWysiwygView({ elements, docState }) {
       document.execCommand('formatBlock', false, blockArg);
     }
 
-    normalizeBlocks();
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     normalizeBlocks();
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   }
 
   // Enter handling:
@@ -211,20 +211,20 @@ export function initWysiwygView({ elements, docState }) {
     CALLOUT_TYPES.forEach((c) => callout.classList.remove(c));
     callout.classList.add(cls);
 
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   }
 
-  function applyScreenshot() {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    let node = sel.getRangeAt(0).commonAncestorContainer;
-    if (node.nodeType === 3) node = node.parentNode;
-    const img = node.closest ? node.closest('img') : null;
-    if (img) {
-      img.classList.add('screenshot');
-      docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
-    }
-  }
+   function applyScreenshot() {
+     const sel = window.getSelection();
+     if (!sel || sel.rangeCount === 0) return;
+     let node = sel.getRangeAt(0).commonAncestorContainer;
+     if (node.nodeType === 3) node = node.parentNode;
+     const img = node.closest ? node.closest('img') : null;
+     if (img) {
+       img.classList.add('screenshot');
+       docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     }
+   }
 
   function normalizeTable() {
     const sel = window.getSelection();
@@ -249,7 +249,7 @@ export function initWysiwygView({ elements, docState }) {
       });
     });
 
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   }
 
   function wrapUserInput() {
@@ -387,11 +387,11 @@ export function initWysiwygView({ elements, docState }) {
   action('strikeThrough')?.addEventListener('click', () => command('strikeThrough'));
   action('subscript')?.addEventListener('click', () => command('subscript'));
   action('superscript')?.addEventListener('click', () => command('superscript'));
-  action('link')?.addEventListener('click', () => {
-    const url = prompt('Enter URL:');
-    if (url) command('createLink', url);
-  });
-  action('unlink')?.addEventListener('click', () => command('unlink'));
+ // action('link')?.addEventListener('click', () => {
+ //   const url = prompt('Enter URL:');
+ //   if (url) command('createLink', url);
+ // });
+ // action('unlink')?.addEventListener('click', () => command('unlink'));
   action('removeFormat')?.addEventListener('click', () => command('removeFormat'));
 
   // Lists / indent / alignment
@@ -412,28 +412,37 @@ export function initWysiwygView({ elements, docState }) {
   btnHr?.addEventListener('click', () => command('insertHorizontalRule'));
 
   // Styles dropdown
-  stylesSelect?.addEventListener('change', (e) => {
-    restoreRange();
+  // stylesSelect?.addEventListener('change', (e) => {
+  // const v = e.target.value || '';
+  // if (!v) return;
 
-    const v = e.target.value || '';
-    if (!v) return;
+  // --- Block formats (p, h1, h2, h3, etc.) ---
+  // Let Lexical's BlockFormatBridgePlugin handle these.
+  // if (v.startsWith('block:')) {
+    // Optionally reset the dropdown; Lexical also resets it.
+  //   stylesSelect.selectedIndex = 0;
+  //   return;
+  // }
 
-    if (v.startsWith('block:')) {
-      const tag = v.split(':')[1]; // p, h1, h2, h3, pre, blockquote
-      setBlockFormat(tag);
-    } else if (v.startsWith('callout:')) {
-      const which = v.split(':')[1]; // note, warning, example-block, remove
-      toggleCallout(which);
-    }
+  // --- Callouts (note, warning, example, remove) ---
+  // if (v.startsWith('callout:')) {
+    // This is still using the old contenteditable implementation
+    // until we move callouts into Lexical.
+  //   restoreRange();
 
-    stylesSelect.selectedIndex = 0;
-    wysiwyg.focus();
-  });
+  //   const which = v.split(':')[1]; // note, warning, example-block, remove
+  //   toggleCallout(which);
+
+  //   stylesSelect.selectedIndex = 0;
+  //   wysiwyg.focus();
+ //  }
+// });
+
 
   // Live sync from WYSIWYG typing
   wysiwyg.addEventListener('input', () => {
     normalizeInline();
     normalizeBlocks();
-    docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
+     docState.setCleanHtml(wysiwyg.innerHTML, { from: 'wysiwyg' });
   });
 }

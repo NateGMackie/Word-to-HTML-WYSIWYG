@@ -27,13 +27,13 @@ export function initWordView({
   });
 
   // Reset everything
-  btnClearAll?.addEventListener("click", () => {
-    wordInput.innerHTML = "";
-    docState.setCleanHtml("", { from: "system" });
-    if (htmlEditor) htmlEditor.value = "";
-    if (wysiwyg) wysiwyg.innerHTML = "";
-    docState.updateStats();
-  });
+  // btnClearAll?.addEventListener("click", () => {
+    // wordInput.innerHTML = "";
+    // docState.setCleanHtml("", { from: "system" });
+    // if (htmlEditor) htmlEditor.value = "";
+    // if (wysiwyg) wysiwyg.innerHTML = "";
+    // docState.updateStats();
+  // });
 
   // Paste button: try HTML from clipboard, fallback to text
   btnPaste?.addEventListener("click", async () => {

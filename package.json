@@ -1,12 +1,27 @@
 {
-"name": "word-to-html-wysiwyg",
-"private": true,
-"type": "module",
-"scripts": {
-"dev": "npx http-server -c-1 -p 5173 ./public",
-"format": "npx prettier -w ."
-},
-"devDependencies": {
-"prettier": "^3.3.3"
-}
+  "name": "word-to-html-wysiwyg",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "format": "prettier -w ."
+  },
+  "dependencies": {
+    "@lexical/code": "^0.38.2",
+    "@lexical/link": "^0.38.2",
+    "@lexical/list": "^0.38.2",
+    "@lexical/react": "^0.38.2",
+    "@lexical/rich-text": "^0.38.2",
+    "@lexical/selection": "^0.38.2",
+    "lexical": "^0.38.2",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "vite": "^5.0.0"
+  }
 }

@@ -1,8 +1,8 @@
 /*-------------------------------------
-  0. Scope – ONLY affect WYSIWYG content
+  Scope – ONLY affect WYSIWYG content
 -------------------------------------*/
 
-#wysiwyg {
+#wysiwygRoot {
   font-family: Arial, sans-serif;
   font-size: 14px;
   line-height: 1.6;
@@ -10,23 +10,23 @@
 }
 
 /* Ensure nested elements inherit correctly */
-#wysiwyg * {
+#wysiwygRoot * {
   box-sizing: border-box;
 }
 
 /*-------------------------------------
-  2. Headings
+  Headings
   (ported from your doc CSS, but scoped + slightly tweaked for dark UI)
 -------------------------------------*/
 
-#wysiwyg h1 {
+#wysiwygRoot h1 {
   font-size: 22px !important;
   font-weight: bold;
   margin-bottom: 10px;
   color: #f9fafb;
 }
 
-#wysiwyg h2 {
+#wysiwygRoot h2 {
   font-size: 18px !important;
   font-weight: bold;
   margin-top: 40px;
@@ -34,7 +34,7 @@
   color: #e5e7eb;
 }
 
-#wysiwyg h3 {
+#wysiwygRoot h3 {
   font-size: 16px !important;
   font-weight: bold;
   margin-top: 18px;
@@ -43,141 +43,232 @@
 }
 
 /*-------------------------------------
-  3. Paragraphs
+  Paragraphs
 -------------------------------------*/
 
-#wysiwyg p {
+#wysiwygRoot p {
   margin-bottom: 12px;
 }
 
 /*-------------------------------------
-  4. Lists
-  (same structure as your ServiceNow-friendly CSS)
--------------------------------------*/
+ Lists (same structure as your ServiceNow-friendly CSS) 
+ -------------------------------------*/ 
+ /* #wysiwygRoot ul, 
+ #wysiwygRoot ol { 
+ margin-left: 20px; 
+ padding-left: 0; 
+ list-style-position: 
+ inside; /* Required by ServiceNow } 
+ 
+ #wysiwygRoot ul li, 
+ #wysiwygRoot ol li { 
+ margin-bottom: 6px; 
+ position: relative; 
+ padding-left: 20px; 
+ text-indent: -20px; /* Creates hanging indent } */ 
+ 
+ /* #wysiwygRoot ul li::marker, 
+ #wysiwygRoot ol li::marker { 
+ font-weight: bold; } */ 
+ 
+ /* Fix line breaks in list items */ 
+ /* #wysiwygRoot ul li br, 
+ #wysiwygRoot ol li br { 
+ display: block; content: ""; 
+ margin-left: 20px; } */ 
+ 
+/* Bullet styles by nesting depth*/
 
-#wysiwyg ul,
-#wysiwyg ol {
-  margin-left: 20px;
-  padding-left: 0;
-  list-style-position: inside; /* Required by ServiceNow */
+/* Level 1 */
+#wysiwygRoot .w2h-editor ul {
+  list-style-type: disc;
 }
 
-#wysiwyg ul li,
-#wysiwyg ol li {
-  margin-bottom: 6px;
-  position: relative;
-  padding-left: 20px;
-  text-indent: -20px; /* Creates hanging indent */
+/* Level 2 */
+#wysiwygRoot .w2h-editor ul ul {
+  list-style-type: square;
 }
 
-#wysiwyg ul li::marker,
-#wysiwyg ol li::marker {
-  font-weight: bold;
+/* Level 3 */
+#wysiwygRoot .w2h-editor ul ul ul {
+  list-style-type: circle;
 }
 
-/* Fix line breaks in list items */
-#wysiwyg ul li br,
-#wysiwyg ol li br {
-  display: block;
-  content: "";
-  margin-left: 20px;
+/* Number styles by nesting depth */
+
+/* Level 1 */
+#wysiwygRoot .w2h-editor ol {
+  list-style-type: decimal;
+}
+
+/* Level 2 */
+#wysiwygRoot .w2h-editor ol ol {
+  list-style-type: lower-alpha;   /* a, b, c */
+}
+
+/* Level 3 */
+#wysiwygRoot .w2h-editor ol ol ol {
+  list-style-type: lower-roman;   /* i, ii, iii */
+}
+
+/* Make sure markers are visible and match the text color */ 
+/* #wysiwygRoot ul li::marker, 
+#wysiwygRoot ol li::marker { 
+color: inherit; 
+font-weight: bold; 
+} */ 
+ 
+/* Editor-friendly lists inside the Lexical editor */ 
+#wysiwygRoot .w2h-editor ul, 
+#wysiwygRoot .w2h-editor ol { 
+  margin-left: 1.0rem; 
+  padding-left: 0; 
+  list-style-position: outside; /* better caret behavior */ 
+} 
+
+#wysiwygRoot .w2h-editor li { 
+  margin-bottom: 0.375rem; 
+  padding-left: 0; 
+  text-indent: 0; /* no hanging indent in-editor */ 
+} 
+/* Keep bullets/numbers visible and styled */ 
+#wysiwygRoot .w2h-editor ul li::marker, 
+#wysiwygRoot .w2h-editor ol li::marker { 
+  font-weight: bold; color: inherit; 
+}
+
+/* Hide the outer marker when a list item only exists to wrap a nested list
+   This prevents "2.  1. Sub item" on the same line. */
+#wysiwygRoot .w2h-editor li:has(> ol),
+#wysiwygRoot .w2h-editor li:has(> ul) {
+  list-style-type: none;
+}
+
+/* Optional: add a small visual gap before nested lists */
+#wysiwygRoot .w2h-editor li > ol,
+#wysiwygRoot .w2h-editor li > ul {
+  margin-top: 0.25rem;
 }
 
 /*-------------------------------------
-  5. Tables
+  Tables
 -------------------------------------*/
 
-#wysiwyg table {
+#wysiwygRoot table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
 }
 
-#wysiwyg th,
-#wysiwyg thead,
-#wysiwyg td {
+#wysiwygRoot th,
+#wysiwygRoot thead,
+#wysiwygRoot td {
   border: 1px solid #4b5563;
   padding: 8px;
 }
 
-#wysiwyg th,
-#wysiwyg thead {
+#wysiwygRoot th,
+#wysiwygRoot thead {
   background-color: #111827;
   font-weight: bold;
 }
 
 /*-------------------------------------
-  6. Code Blocks
+  Code Blocks
 -------------------------------------*/
 
-#wysiwyg pre {
-  background: #111827;
-  padding: 10px;
-  border-radius: 4px;
-  font-family: Consolas, Menlo, Monaco, monospace;
-  font-size: 13px;
-}
+
+
 
 /*-------------------------------------
-  7. Links
+  Links
 -------------------------------------*/
 
-#wysiwyg a {
+#wysiwygRoot a {
   color: #60a5fa;
   text-decoration: none;
 }
 
-#wysiwyg a:hover {
+#wysiwygRoot a:hover {
   text-decoration: underline;
 }
 
 /*-------------------------------------
-  8. Callouts (Note, Warning, Example)
+  Callouts (Note, Warning, Example)
   (same semantics, colors nudged for dark background)
 -------------------------------------*/
 
-#wysiwyg .callout {
+#wysiwygRoot .callout, 
+#wysiwygRoot blockquote{
   padding: 1em;
-  margin: 1em 0;
+  margin: 12px 0;
   white-space: normal;
   box-sizing: border-box;
   border-radius: 4px;
 }
 
-#wysiwyg .callout.note {
+#wysiwygRoot .callout.note, .callout.example {
   background-color: #0f172a;
   border-left: 4px solid #3b82f6;
 }
 
-#wysiwyg .callout.warning {
+#wysiwygRoot .callout.warning {
   background-color: #43302b;
   border-left: 4px solid #f97316;
 }
 
-#wysiwyg .callout.example-block {
-  background-color: #111827;
-  border-left: 4px solid #9ca3af;
-}
-
 /* Adjust spacing/indentation inside lists */
-#wysiwyg li .callout {
+#wysiwygRoot li .callout, #wysiwygRoot li blockquote {
   text-indent: 0;
   padding-left: 1em;
   margin-left: 0;
   display: block;
 }
 
-#wysiwyg li > .note,
-#wysiwyg li > .warning,
-#wysiwyg li > .example-block {
+#wysiwygRoot li > .note,
+#wysiwygRoot li > .warning,
+#wysiwygRoot li > .example,
+#wysiwygRoot li > blockquote {
   margin-top: 0.5em;
 }
 
+/* blockquote style callout */
+
+#wysiwygRoot blockquote {
+  background-color: transparent !important;   /* no background */
+  border-left: 4px solid #3b82f6; 
+}
+
+/* Optional: tweak blockquote’s inner <p> spacing */
+#wysiwygRoot blockquote p {
+  margin: 0.4em 0;
+}
+
 /*-------------------------------------
-  9. User Input Formatting
+  Code Blocks (block-level)
+  - Lexical editor: bare <code spellcheck="false">
+  - HTML view: <pre>
 -------------------------------------*/
 
-#wysiwyg .user-input {
+#wysiwygRoot pre,
+#wysiwygRoot .w2h-editor code[spellcheck="false"] {
+  display: block;
+  background: #111827;
+  border-left: 4px solid #9ca3af;   /* gray variant of callout border */
+  font-family: Consolas, Menlo, Monaco, monospace;
+  font-size: 13px;
+  padding: 0.75rem 1rem;            /* same feel as callouts */
+  margin: 12px 0;                   /* same vertical spacing as callouts */
+  white-space: pre-wrap;            /* preserve formatting, but wrap long lines */
+  box-sizing: border-box;
+  border-radius: 4px;
+}
+
+/*-------------------------------------
+  User Input Formatting
+-------------------------------------*/
+
+#wysiwygRoot .user-input {
   font-family: Consolas, monospace;
   background-color: #374151;
   padding: 2px 4px;
@@ -185,16 +276,23 @@
   color: #f9fafb;
 }
 
-#wysiwyg .user-input .variable {
+/* Base variable styling (even if not nested) */
+#wysiwygRoot .variable {
+  font-style: italic;
+  color: #e5e7eb;
+}
+
+/* Nested variable gets the same styling but keeps the cascade explicit */
+#wysiwygRoot .user-input .variable {
   font-style: italic;
   color: #e5e7eb;
 }
 
 /*-------------------------------------
-  10. Screenshots
+  Screenshots
 -------------------------------------*/
 
-#wysiwyg .screenshot {
+#wysiwygRoot .screenshot {
   border: 1px solid #9ca3af;
   display: block;
   margin: 12px 0;
@@ -203,11 +301,11 @@
 }
 
 /*-------------------------------------
-  11. DRAFT watermark
+  DRAFT watermark
   (only applied if you explicitly add .draft to the editor)
 -------------------------------------*/
 
-#wysiwyg.draft::before {
+#wysiwygRoot.draft::before {
   content: "DRAFT";
   position: absolute;
   top: 40%;
@@ -218,4 +316,39 @@
   z-index: 0;
   pointer-events: none;
   white-space: nowrap;
+}
+
+/* Inline text formats for Lexical */
+
+#wysiwygRoot .w2h-text-bold {
+  font-weight: 600;
+}
+
+#wysiwygRoot .w2h-text-italic {
+  font-style: italic;
+}
+
+#wysiwygRoot .w2h-text-underline {
+  text-decoration: underline;
+}
+
+#wysiwygRoot .w2h-text-strike {
+  text-decoration: line-through;
+}
+
+.w2h-text-sub {
+  vertical-align: sub;
+  font-size: 0.8em;
+}
+
+.w2h-text-super {
+  vertical-align: super;
+  font-size: 0.8em;
+}
+
+.w2h-text-code {
+  font-family: ui-monospace, monospace;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
 }
