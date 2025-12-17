@@ -3,8 +3,10 @@ import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { CodeNode /*, CodeHighlightNode */ } from '@lexical/code';
 import { AutoLinkNode, LinkNode } from '@lexical/link';
 import { ListNode, ListItemNode, } from '@lexical/list';
-// src/editor/lexicalConfig.js
-// import { CalloutNode } from '../nodes/CalloutNode.js';
+import { TableNode, TableRowNode, TableCellNode } from '@lexical/table';
+
+// custom nodes 
+import { CalloutNode } from '../nodes/CalloutNode.js';
 import { UserInputNode } from '../nodes/UserInputNode.js';
 import { VariableNode } from '../nodes/VariableNode.js';
 
@@ -25,6 +27,12 @@ export const editorConfig = {
       superscript: 'w2h-text-super',
       code: 'w2h-text-code',
     },
+
+    table: 'w2h-table',
+tableRow: 'w2h-table-row',
+tableCell: 'w2h-table-cell',
+tableCellHeader: 'w2h-table-cell-header',
+
 
     link: 'w2h-link',
     userInput: 'user-input',
@@ -48,8 +56,14 @@ export const editorConfig = {
     CodeNode,
     // CodeHighlightNode, // optional, if you later wire in a code highlight plugin
 
+    // Tables
+    TableNode,
+TableRowNode,
+TableCellNode,
+
+
     // Custom blocks
-    // CalloutNode,
+    CalloutNode,
 
     // User input
     UserInputNode,

@@ -11,6 +11,8 @@ import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
 } from '@lexical/list';
+import { INSERT_TABLE_COMMAND } from '@lexical/table';
+
 
 export default function ToolbarBridgePlugin() {
   const [editor] = useLexicalComposerContext();
@@ -70,6 +72,34 @@ return () => btn.removeEventListener('mousedown', handler);
 return () => btn.removeEventListener('mousedown', handler);
 
     }
+
+    function hookInsertTableButton(selector) {
+  const btn = document.querySelector(selector);
+  if (!btn) return null;
+
+  const handler = (event) => {
+    event.preventDefault();
+    editor.focus();
+
+    // Minimal UX: prompt for dimensions
+    const rows = Number(window.prompt('Rows?', '2') || '0');
+    const columns = Number(window.prompt('Columns?', '2') || '0');
+
+    if (!Number.isInteger(rows) || !Number.isInteger(columns) || rows < 1 || columns < 1) {
+      return;
+    }
+
+    editor.dispatchCommand(INSERT_TABLE_COMMAND, {
+      rows,
+      columns,
+      includeHeaders: false,
+    });
+  };
+
+  btn.addEventListener('mousedown', handler);
+  return () => btn.removeEventListener('mousedown', handler);
+}
+
 
     function hookListButton(selector, command) {
       const btn = document.querySelector(selector);
@@ -144,6 +174,9 @@ return () => btn.removeEventListener('mousedown', handler);
       // Lists: toggle OL / UL
       hookListButton('#btnUl', INSERT_UNORDERED_LIST_COMMAND),
       hookListButton('#btnOl', INSERT_ORDERED_LIST_COMMAND),
+
+      // NEW: Insert Table
+      hookInsertTableButton('#btnInsertTable'),
 
       // NEW: List/paragraph indentation (nested lists)
       hookIndentButton('#btnIndent', INDENT_CONTENT_COMMAND),

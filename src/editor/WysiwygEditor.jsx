@@ -7,6 +7,8 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
+
 import { $generateHtmlFromNodes } from '@lexical/html';
 
 import { editorConfig } from './lexicalConfig.js';
@@ -113,6 +115,7 @@ export default function WysiwygEditor({ onHtmlChange }) {
 
         <HistoryPlugin />
         <ListPlugin />
+        <TablePlugin />
         <LinkPlugin />
 
         <OnChangePlugin
