@@ -9,7 +9,7 @@ import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 
-import { $generateHtmlFromNodes } from '@lexical/html';
+import { exportHtmlFromEditor } from '../export/htmlExport.js';
 
 import { editorConfig } from './lexicalConfig.js';
 import InitialParagraphPlugin from './InitialParagraphPlugin';
@@ -27,70 +27,6 @@ function Placeholder() {
   );
 }
 
-// Strip editor-only classes and tidy up simple formatting wrappers
-function cleanExportHtml(rawHtml) {
-  let html = rawHtml;
-
-  // 1) Remove any w2h-* classes but keep other classes
-  html = html.replace(/\sclass="([^"]*)"/g, (match, classValue) => {
-    const kept = classValue
-      .split(/\s+/)
-      .filter((name) => name && !name.startsWith('w2h-'));
-
-    if (kept.length === 0) {
-      return '';
-    }
-
-    return ` class="${kept.join(' ')}"`;
-  });
-
-  // 2) Collapse <b><strong>…</strong></b> → <strong>…</strong>
-  html = html.replace(
-    /<b>\s*(<strong\b[^>]*>[\s\S]*?<\/strong>)\s*<\/b>/gi,
-    '$1',
-  );
-
-  // 3) Collapse <i><em>…</em></i> → <em>…</em>
-  html = html.replace(
-    /<i>\s*(<em\b[^>]*>[\s\S]*?<\/em>)\s*<\/i>/gi,
-    '$1',
-  );
-
-  // 4) Remove value="…" from <li> (not needed for our output)
-  html = html.replace(/\svalue="[\d]+"/g, '');
-
-  // 5) Flatten <sub><span>text</span></sub> → <sub>text</sub>
-  html = html.replace(
-    /<sub\b([^>]*)>\s*<span\b[^>]*>([\s\S]*?)<\/span>\s*<\/sub>/gi,
-    '<sub$1>$2</sub>',
-  );
-
-  // 6) Flatten <sup><span>text</span></sup> → <sup>text</sup>
-  html = html.replace(
-    /<sup\b([^>]*)>\s*<span\b[^>]*>([\s\S]*?)<\/span>\s*<\/sup>/gi,
-    '<sup$1>$2</sup>',
-  );
-
-  // 7) (Optional) Unwrap simple spans that only add white-space: pre-wrap
-  html = html.replace(
-    /<span style="white-space:\s*pre-wrap;">([^<]*)<\/span>/gi,
-    '$1',
-  );
-
-  // Remove white-space: pre-wrap from inline tags when safe
-html = html.replace(
-  /\sstyle="white-space:\s*pre-wrap;?"/g,
-  ''
-);
-
-// Unwrap spans used only for pre-wrap on plain text (not inside <pre>)
-html = html.replace(
-  /<span style="white-space:\s*pre-wrap;">([^<]*)<\/span>/g,
-  '$1'
-);
-
-  return html;
-}
 
 
 export default function WysiwygEditor({ onHtmlChange }) {
@@ -123,10 +59,10 @@ export default function WysiwygEditor({ onHtmlChange }) {
             if (!onHtmlChange) return;
 
             editorState.read(() => {
-      const rawHtml = $generateHtmlFromNodes(editor);
-      const html = cleanExportHtml(rawHtml);
-      onHtmlChange(html);
-            });
+  const html = exportHtmlFromEditor(editor);
+  onHtmlChange(html);
+});
+
           }}
         />
 
