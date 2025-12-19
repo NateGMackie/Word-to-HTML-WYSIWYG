@@ -12,17 +12,20 @@ export function createDocState({ htmlEditor, wysiwyg, statBytes, statWords }) {
   }
 
    function setCleanHtml(html, { from = 'system' } = {}) {
-   cleanHTML = html || '';
+  cleanHTML = html || '';
 
-     if (from !== 'html' && htmlEditor) {
-       htmlEditor.value = cleanHTML;
-     }
-     if (from !== 'wysiwyg' && wysiwyg) {
-       wysiwyg.innerHTML = cleanHTML || '';
-     }
+  // Only push into the HTML textarea when the change came from WYSIWYG
+  // AND the user is not actively typing in the HTML textarea.
+  if (htmlEditor && from === 'wysiwyg' && document.activeElement !== htmlEditor) {
+    htmlEditor.value = cleanHTML;
+  }
 
-     updateStats();
-   }
+  // IMPORTANT:
+  // Do NOT do wysiwyg.innerHTML = cleanHTML here.
+  // Lexical owns the WYSIWYG DOM. Touching it will cause focus/teardown issues.
+  updateStats();
+}
+
 
   function getCleanHtml() {
     return cleanHTML;

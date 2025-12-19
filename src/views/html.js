@@ -1,5 +1,5 @@
 // src/views/html.js
-export function initHtmlView({ elements, docState }) {
+export function initHtmlView({ elements, docState, applyHtmlToWysiwyg }) {
   const { htmlEditor, btnFormatHtml } = elements;
   if (!htmlEditor) return;
 
@@ -93,12 +93,20 @@ export function initHtmlView({ elements, docState }) {
 
 
   btnFormatHtml?.addEventListener('click', () => {
-    const pretty = prettyHtml(htmlEditor.value);
-    htmlEditor.value = pretty;
-    docState.setCleanHtml(pretty, { from: 'html' });
-  });
+  // optional: pretty print first
+  const pretty = prettyHtml(htmlEditor.value);
+  htmlEditor.value = pretty;
+  docState.setCleanHtml(pretty, { from: 'html' });
+
+  // Apply once, intentionally
+  applyHtmlToWysiwyg?.(pretty);
+});
+
 
   htmlEditor.addEventListener('input', () => {
-    docState.setCleanHtml(htmlEditor.value, { from: 'html' });
-  });
+  const html = htmlEditor.value;
+  docState.setCleanHtml(html, { from: 'html' });
+  // no live import
+});
+
 }

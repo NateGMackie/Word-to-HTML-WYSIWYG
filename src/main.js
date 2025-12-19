@@ -2,6 +2,8 @@
 import { createDocState } from './services/docState.js';
 import { initWordView } from './views/word.js';
 import { initHtmlView } from './views/html.js';
+import { importHtmlToEditor } from './editor/importHtmlToEditor.js';
+
 // import { initWysiwygView } from './views/wysiwyg.js';
 // import { initHotkeys } from './ux/hotkeys.js';
 
@@ -220,6 +222,10 @@ if (menuImport && navWord && menuPanel) {
 //   updateToolbarState();
 // }
 
+let lexicalEditor = null;
+let suppressWysiwygToHtml = false;
+
+
   // ---- Document state ----
   const docState = createDocState({ htmlEditor, wysiwyg, statBytes, statWords });
   
@@ -252,6 +258,10 @@ if (menuImport && navWord && menuPanel) {
     if (badgeActive) {
       const label = view === 'word' ? 'Word' : view === 'html' ? 'HTML' : 'WYSIWYG';
       badgeActive.textContent = `View: ${label}`;
+    }
+
+    if (view === 'html' && htmlEditor) {
+      htmlEditor.value = docState.getCleanHtml() || '';
     }
   }
 
@@ -353,9 +363,22 @@ if (menuImport && navWord && menuPanel) {
   });
 
   initHtmlView({
-    elements: sharedElements,
-    docState,
-  });
+  elements: sharedElements,
+  docState,
+  applyHtmlToWysiwyg: (html) => {
+    if (!lexicalEditor) return;
+
+    // We are driving Lexical from HTML right now; don't let Lexical echo back.
+    suppressWysiwygToHtml = true;
+    importHtmlToEditor(lexicalEditor, html);
+
+    // Release suppression on the next tick after Lexical processes the update.
+    setTimeout(() => {
+      suppressWysiwygToHtml = false;
+    }, 0);
+  },
+});
+
 
   //initWysiwygView({
   //  elements: sharedElements,
@@ -393,13 +416,21 @@ if (menuImport && navWord && menuPanel) {
   setActiveView('wysiwyg');
 
   // Mount Lexical WYSIWYG last, and sync editor → HTML view + docState
-  mountWysiwygEditor({
-    onHtmlChange: (html) => {
-      if (htmlEditor) {
-        htmlEditor.value = html;
-      }
-      docState.setCleanHtml(html, { from: 'wysiwyg' });
-    },
-  });
+mountWysiwygEditor({
+  onEditorReady: (editor) => {
+    lexicalEditor = editor;
+  },
+  onHtmlChange: (html) => {
+  if (suppressWysiwygToHtml) return;
+
+  // Only live-sync into docState/HTML view when WYSIWYG is the active view
+  if (getActiveView() !== 'wysiwyg') return;
+
+  docState.setCleanHtml(html, { from: 'wysiwyg' });
+},
+
+});
+
+
 });
 
