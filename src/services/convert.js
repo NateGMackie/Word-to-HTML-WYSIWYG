@@ -107,6 +107,33 @@ function normalizeWordOnlineHeadings(doc) {
   });
 }
 
+function normalizeLinks(doc) {
+  // 1) Drop anchors that have no usable href (Word sometimes creates empty anchors)
+  doc.querySelectorAll("a").forEach((a) => {
+    const href = (a.getAttribute("href") || "").trim();
+
+    // If no href, unwrap the anchor but keep its contents
+    if (!href) {
+      const parent = a.parentNode;
+      if (!parent) return;
+      while (a.firstChild) parent.insertBefore(a.firstChild, a);
+      a.remove();
+      return;
+    }
+
+    // If href is just a hash with nothing meaningful, keep it (ServiceNow can handle),
+    // but you could choose to unwrap it here if you want stricter output.
+
+    // 2) Remove <u> tags inside links (let CSS style links)
+    a.querySelectorAll("u").forEach((u) => {
+      const p = u.parentNode;
+      if (!p) return;
+      while (u.firstChild) p.insertBefore(u.firstChild, u);
+      u.remove();
+    });
+  });
+}
+
 // 2) Flatten wrapper divs that Word Online loves to sprinkle everywhere
 function flattenWordOnlineWrappers(doc) {
   const selectors = [
@@ -742,6 +769,7 @@ export function cleanHTML(inputHTML) {
   removeWordComments(doc);
   applyInlineStyleFormatting(doc);    // span[style] → <strong>/<em>/<u>/<s>/<sup>/<sub>
   removeMsoStyling(doc);              // strip mso-* rules/classes
+  normalizeLinks(doc);
 
   // 5) Generic normalization / attribute slimming
   stripNonContentAttributes(doc);     // keep href/src/alt/colspan/... only
