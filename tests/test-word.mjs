@@ -12,8 +12,8 @@ function installDomShim() {
 
 installDomShim();
 
-import { cleanHTML } from "./src/services/convert.js";
-import { cleanAndNormalizeExportHtml } from "./src/export/htmlExport.js";
+import { cleanHTML } from "../src/services/convert.js";
+import { cleanAndNormalizeExportHtml } from "../src/export/htmlExport.js";
 
 const html = fs.readFileSync("world.html", "utf8");
 
@@ -88,13 +88,7 @@ function prettyHtml(html) {
         // Void tags
         if (VOID_TAGS.has(tag)) return `${tab.repeat(depth)}<${tag}${attrs}>\n`;
 
-        // Strip tbody wrappers for canonical output
-        if (tag === "tbody") {
-          let out = "";
-          for (const child of node.childNodes) out += formatNode(child, depth);
-          return out;
-        }
-
+      
         // Preserve exact text (including newlines) inside <pre> (fixtures rely on this)
         if (tag === "pre") {
           const text = node.textContent || "";

@@ -72,11 +72,12 @@ Anything not explicitly allowed below is **removed or normalized** during export
 - `class` (required for semantic spans; otherwise stripped)
 
 **`table`, `tr`**
-- no attributes allowed
+- `id` (optional)
 
 **`th`, `td`**
 - `colspan` (optional)
 - `rowspan` (optional)
+- `id` (optional)
 
 **`img`**
 - `src` (required)
@@ -84,6 +85,17 @@ Anything not explicitly allowed below is **removed or normalized** during export
 - `alt` (optional, recommended)
 - `height` (optional)
 - `width` (optional)
+
+**`h1`-`h6`**
+- `id` (optional)
+
+**`p`**
+- `id` (optional)
+
+**`li`**
+- `id` (optional)
+
+
 
 ---
 
@@ -126,6 +138,29 @@ Examples:
 - Any class containing `w2h-*` is removed
 - Any class token not listed above is removed
 - If `class` becomes empty after cleanup, the attribute is removed
+
+---
+
+### 2.4 ID attribute rules
+
+**Allowed id usage**
+- Allowed on: `h1`, `h2`, `h3`
+- Format: `^[_A-Za-z][A-Za-z0-9_\-:.]{0,79}$`
+- Normalization (import + export):
+  - whitespace → `_`
+  - remove chars outside `A–Z a–z 0–9 _ - : .`
+  - if starts with digit, prefix with `id_`
+  - truncate to 80 chars
+- Uniqueness: if duplicates exist, suffix `-2`, `-3`, etc.
+
+- id must be normalized:
+  - Spaces → `_`
+  - Only `[A-Za-z0-9_\-:.]`
+  - Cannot start with a digit (prefix `id_`)
+- id must be unique in the document:
+  - duplicates get `-2`, `-3`, etc.
+- When converting Word bookmarks:
+  - Bookmark names should map to id on the nearest appropriate block element (prefer headings)
 
 ---
 

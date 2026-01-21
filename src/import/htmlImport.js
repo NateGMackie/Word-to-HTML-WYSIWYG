@@ -93,6 +93,23 @@ function normalizeInlineFormatting(doc) {
   });
 }
 
+function normalizeInlineSpacing(doc) {
+  const inline = "strong,em,u,s,sub,sup,span,a";
+  doc.querySelectorAll(inline).forEach((el) => {
+    // If the element ends with a space and next text starts immediately, move the space outside.
+    const last = el.lastChild;
+    const next = el.nextSibling;
+
+    if (last?.nodeType === Node.TEXT_NODE && / $/.test(last.nodeValue || "")) {
+      if (next?.nodeType === Node.TEXT_NODE && /^\S/.test(next.nodeValue || "")) {
+        last.nodeValue = (last.nodeValue || "").replace(/ $/, "");
+        next.nodeValue = " " + next.nodeValue;
+      }
+    }
+  });
+}
+
+
 // ===== Extra normalization for modern Word / Word Online HTML =====
 
 // 1) Turn <p role="heading" aria-level="1"> into <h1>, etc.
@@ -108,31 +125,73 @@ function normalizeWordOnlineHeadings(doc) {
 }
 
 function normalizeLinks(doc) {
-  // 1) Drop anchors that have no usable href (Word sometimes creates empty anchors)
-  doc.querySelectorAll("a").forEach((a) => {
-    const href = (a.getAttribute("href") || "").trim();
+  const allowedSchemes = new Set(["http:", "https:", "mailto:"]);
+  const anchors = doc.querySelectorAll("a[href]");
 
-    // If no href, unwrap the anchor but keep its contents
-    if (!href) {
-      const parent = a.parentNode;
-      if (!parent) return;
-      while (a.firstChild) parent.insertBefore(a.firstChild, a);
-      a.remove();
+  anchors.forEach((a) => {
+    const hrefRaw = (a.getAttribute("href") || "").trim();
+
+    // Empty href => unwrap
+    if (!hrefRaw) {
+      a.replaceWith(...a.childNodes);
       return;
     }
 
-    // If href is just a hash with nothing meaningful, keep it (ServiceNow can handle),
-    // but you could choose to unwrap it here if you want stricter output.
+    const schemeMatch = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.exec(hrefRaw);
+if (schemeMatch) {
+  const scheme = schemeMatch[0].toLowerCase(); // e.g. "javascript:"
+  if (!allowedSchemes.has(scheme)) {
+    a.replaceWith(...a.childNodes);
+    return;
+  }
+}
 
-    // 2) Remove <u> tags inside links (let CSS style links)
-    a.querySelectorAll("u").forEach((u) => {
-      const p = u.parentNode;
-      if (!p) return;
-      while (u.firstChild) p.insertBefore(u.firstChild, u);
-      u.remove();
+    // Anchor link
+    if (hrefRaw.startsWith("#")) {
+      // Keep only href (strip target/rel/etc.)
+      Array.from(a.attributes).forEach((attr) => {
+        if (attr.name !== "href") a.removeAttribute(attr.name);
+      });
+      return;
+    }
+
+    // Parse scheme safely
+    let url;
+    try {
+      url = new URL(hrefRaw, "https://example.invalid"); // base for relative
+    } catch {
+      // If it's not parseable, unwrap
+      a.replaceWith(...a.childNodes);
+      return;
+    }
+
+    const scheme = url.protocol;
+
+    // Disallowed scheme => unwrap
+    if (!allowedSchemes.has(scheme)) {
+      a.replaceWith(...a.childNodes);
+      return;
+    }
+
+    // External http(s): enforce rel/target (matches export contract)
+    if (scheme === "http:" || scheme === "https:") {
+      a.setAttribute("target", "_blank");
+      a.setAttribute("rel", "noopener noreferrer");
+    } else {
+      // mailto: should not get target/rel by default
+      a.removeAttribute("target");
+      a.removeAttribute("rel");
+    }
+
+    // Strip unknown attributes (keep href/rel/target only)
+    Array.from(a.attributes).forEach((attr) => {
+      if (!["href", "rel", "target"].includes(attr.name)) {
+        a.removeAttribute(attr.name);
+      }
     });
   });
 }
+
 
 // 2) Flatten wrapper divs that Word Online loves to sprinkle everywhere
 function flattenWordOnlineWrappers(doc) {
@@ -153,11 +212,50 @@ function flattenWordOnlineWrappers(doc) {
   });
 }
 
+function unwrapSingleRootDiv(doc) {
+  const body = doc.body;
+  if (!body) return;
+
+  // element children only (ignore whitespace text nodes)
+  const kids = Array.from(body.children);
+  if (kids.length !== 1) return;
+
+  const root = kids[0];
+  if (root.tagName.toLowerCase() !== "div") return;
+
+  const cls = (root.getAttribute("class") || "").trim();
+
+  // Never unwrap meaningful divs (contract structures)
+  if (/\bcallout\b/i.test(cls)) return;
+
+  // If Word put a wrapper around everything, unwrap it.
+  // Common desktop export wrapper is "WordSection1".
+  const looksLikeWordWrapper =
+    cls === "" ||
+    /\bWordSection\d*\b/i.test(cls) ||
+    /\bSection\d*\b/i.test(cls);
+
+  if (!looksLikeWordWrapper) return;
+
+  // If it has meaningful attributes beyond Word noise, keep it.
+  const allowedWrapperAttrs = new Set(["class", "style", "lang", "dir", "id"]);
+  const hasMeaningfulAttr = Array.from(root.attributes).some(
+    (a) => !allowedWrapperAttrs.has(a.name.toLowerCase())
+  );
+  if (hasMeaningfulAttr) return;
+
+  // Unwrap: move children to body, remove wrapper
+  while (root.firstChild) body.insertBefore(root.firstChild, root);
+  root.remove();
+}
+
 // 3) Strip non-content attributes (classes, inline styles, data-*, etc.)
 //    but KEEP things that matter for content: href, src, alt, colspan, etc.
 function stripNonContentAttributes(doc) {
   const keep = new Set([
+    "id",
     "href",
+    "rel",
     "src",
     "alt",
     "colspan",
@@ -167,17 +265,42 @@ function stripNonContentAttributes(doc) {
     "target",
     "start",
     "type",
+    "class", // handled with rules below
   ]);
+
+  const allowedCalloutKinds = new Set(["note", "warning", "example"]);
+
+  const isAllowedCalloutClass = (el) => {
+    if (el.tagName.toLowerCase() !== "div") return false;
+    const cls = (el.getAttribute("class") || "").trim().toLowerCase();
+    if (!cls) return false;
+
+    const parts = cls.split(/\s+/).filter(Boolean);
+    if (!parts.includes("callout")) return false;
+
+    // must contain exactly one known kind
+    const kind = parts.find((p) => p !== "callout");
+    return !!kind && allowedCalloutKinds.has(kind);
+  };
 
   doc.querySelectorAll("*").forEach((el) => {
     Array.from(el.attributes).forEach((attr) => {
       const name = attr.name.toLowerCase();
+
+      // If not in base keep list, drop it.
       if (!keep.has(name)) {
         el.removeAttribute(attr.name);
+        return;
+      }
+
+      // Special rule: keep class ONLY when it’s a recognized callout.
+      if (name === "class" && !isAllowedCalloutClass(el)) {
+        el.removeAttribute("class");
       }
     });
   });
 }
+
 
 // 4) After attributes are stripped, a ton of <span> wrappers become useless.
 //    Unwrap <span> elements that have no attributes.
@@ -198,8 +321,14 @@ function unwrapEmptySpans(doc) {
 function removeEmptyParagraphs(doc) {
   doc.querySelectorAll("p").forEach((p) => {
     const text = (p.textContent || "").replace(/\u00A0/g, " ").trim();
-    if (!text && !p.querySelector("img, table, ul, ol")) {
-      p.remove();
+    const hasMeaningfulNodes = Array.from(p.childNodes).some((n) => {
+      if (n.nodeType === Node.ELEMENT_NODE) return n.tagName.toLowerCase() !== "o:p";
+      if (n.nodeType === Node.TEXT_NODE) return n.nodeValue.replace(/\u00A0/g, " ").trim().length > 0;
+      return false;
+    });
+
+    if (!hasMeaningfulNodes || text === "") {
+      p.innerHTML = "<br>";
     }
   });
 }
@@ -295,6 +424,11 @@ function getListInfo(p) {
     listId = Number(mWord[1]);
     level = Math.max(1, parseInt(mWord[2], 10));
   }
+  const firstChar = (text || "").replace(/^\s+/, "")[0];
+const wordBulletGlyphs = new Set(["o", "§", "·"]);
+if (hasWordFlag && wordBulletGlyphs.has(firstChar)) {
+  return { type: "ul", level, styleType: null, listId };
+}
 
   // Fallback: "levelN" elsewhere
   if (level == null) {
@@ -656,6 +790,20 @@ function convertListsInDoc(doc) {
             pushList(info, lastLiGlobal);
           }
         }
+        
+// Before opening/continuing lists for this item:
+if (stack.length && info.level < current().level) {
+  closeTo(info.level);
+}
+
+if (stack.length) {
+  // If level decreased, pop back
+  if (info.level < current().level) closeTo(info.level);
+
+  // If same level but list type changed (ul <-> ol), pop to parent so we can start a sibling list cleanly
+  if (info.level === current().level && info.type !== current().type) closeTo(info.level - 1);
+}
+
 
         // Open/continue the appropriate list at the target level
         if (
@@ -735,9 +883,293 @@ function normalizeListStarts(doc) {
   });
 }
 
+function normalizeBookmarkAnchors(doc) {
+  // Word exports bookmark targets as <a name="...">...</a> (often wrapping headings)
+  doc.querySelectorAll("a[name]:not([href])").forEach((a) => {
+    const name = (a.getAttribute("name") || "").trim();
+    if (!name) {
+      a.replaceWith(...a.childNodes);
+      return;
+    }
+
+    // Prefer putting id on a nearby block element
+    const parent = a.parentElement;
+    const parentTag = parent?.tagName?.toLowerCase() || "";
+
+    if (parent && /^h[1-6]$/.test(parentTag) && parent.firstElementChild === a) {
+      parent.setAttribute("id", name);
+      a.replaceWith(...a.childNodes);
+      return;
+    }
+
+    // Otherwise insert a tiny anchor span
+    const marker = doc.createElement("span");
+    marker.setAttribute("id", name);
+    a.parentNode?.insertBefore(marker, a);
+    a.replaceWith(...a.childNodes);
+  });
+}
+
+function flattenMhtWrapperDivs(doc) {
+  // Target pattern (from .mht / saved-as-webpage outputs):
+  // <div [maybe style="mso-element:para-border-div"]>
+  //   <p></p>   (or nbsp)
+  //   <div>...</div>
+  //   <p></p>   (or nbsp)
+  // </div>
+  //
+  // We want:
+  // <div>...</div>
+
+  const isTrulyEmptyP = (p) => {
+    const html = (p.innerHTML || "").replace(/\s+/g, "").toLowerCase();
+    return html === "" || html === "&nbsp;" || html === "&#160;";
+  };
+
+  const isSafeWrapperDiv = (el) => {
+    if (!el || el.tagName?.toLowerCase() !== "div") return false;
+
+    const attrs = Array.from(el.attributes || []);
+    if (attrs.length === 0) return true;
+
+    if (attrs.length === 1 && attrs[0].name.toLowerCase() === "style") {
+      const s = (attrs[0].value || "").toLowerCase();
+      return s.includes("mso-element:para-border-div");
+    }
+
+    return false;
+  };
+
+  doc.querySelectorAll("div").forEach((outer) => {
+    if (!isSafeWrapperDiv(outer)) return;
+
+    // Remove empty <p></p> children inside outer div
+    Array.from(outer.children).forEach((child) => {
+      if (child.tagName.toLowerCase() === "p" && isTrulyEmptyP(child)) {
+        child.remove();
+      }
+    });
+
+    // After removal, if outer contains exactly one element child and it's a div,
+    // replace outer with that inner div.
+    const els = Array.from(outer.children);
+    if (els.length === 1 && els[0].tagName.toLowerCase() === "div") {
+      const inner = els[0];
+
+      outer.replaceWith(inner);
+    }
+  });
+}
+
+
+function normalizeId(raw) {
+  let id = (raw || "").trim();
+  if (!id) return "";
+
+  // Word likes leading underscores; keep those.
+  id = id.replace(/\s+/g, "_");
+
+  // Strip unsafe chars (keep common safe set)
+  id = id.replace(/[^A-Za-z0-9_\-:.]/g, "");
+
+  // Must not start with a digit for sanity/consistency
+  if (/^\d/.test(id)) id = `id_${id}`;
+
+  // Optional: cap length to keep it reasonable
+  if (id.length > 80) id = id.slice(0, 80);
+
+  return id;
+}
+
+function dedupeIds(doc) {
+  const seen = new Map(); // id -> count
+
+  const all = doc.querySelectorAll("[id]");
+  for (const el of all) {
+    const current = el.getAttribute("id") || "";
+    const normalized = normalizeId(current);
+
+    if (!normalized) {
+      el.removeAttribute("id");
+      continue;
+    }
+
+    const count = (seen.get(normalized) || 0) + 1;
+    seen.set(normalized, count);
+
+    if (count === 1) {
+      el.setAttribute("id", normalized);
+    } else {
+      el.setAttribute("id", `${normalized}-${count}`);
+    }
+  }
+}
+
+function normalizeTables(doc) {
+  // Export contract wants only: table > tr > th/td
+  // So we remove/unwrap structural helpers common in Word HTML:
+  // thead/tbody/tfoot/colgroup/col.
+
+  // 1) Remove colgroup/col entirely (layout-only)
+  doc.querySelectorAll("table colgroup, table col").forEach((n) => n.remove());
+
+  // 2) Unwrap thead/tbody/tfoot so their <tr> become direct children of <table>
+  const unwrap = (node) => {
+    const parent = node.parentNode;
+    if (!parent) return;
+
+    // Move all children before the wrapper node
+    while (node.firstChild) {
+      parent.insertBefore(node.firstChild, node);
+    }
+    parent.removeChild(node);
+  };
+
+  // Unwrap in a stable order (deepest wrappers first is safest)
+  // querySelectorAll returns a static NodeList, so this is safe to mutate during iteration.
+  doc.querySelectorAll("table thead, table tbody, table tfoot").forEach(unwrap);
+}
 
 function stripTableBorders(doc) {
   doc.querySelectorAll("table").forEach((tbl) => tbl.removeAttribute("border"));
+}
+
+function normalizeWordParaBorderDivs(doc) {
+  // Word wraps “bordered paragraphs” like:
+  // <div style="mso-element:para-border-div; ...">
+  //   <p class="NoteBlock|WarnBlock|ExampleBlock">...</p>
+  // </div>
+  //
+  // We want:
+  // <div>
+  //   <p>...</p>
+  // </div>
+  //
+  // (We *do not* want nested <div><div><p>... plus padding <p></p>)
+
+  const isCalloutP = (p) => {
+    const cls = (p.getAttribute("class") || "").toLowerCase();
+    return cls === "noteblock" || cls === "warnblock" || cls === "exampleblock";
+  };
+
+  const hasParaBorderStyle = (div) => {
+    const style = (div.getAttribute("style") || "").toLowerCase();
+    return style.includes("mso-element:para-border-div");
+  };
+
+  doc.querySelectorAll("div[style]").forEach((div) => {
+    if (!hasParaBorderStyle(div)) return;
+
+    // Remove “visual” Word styles from the wrapper.
+    div.removeAttribute("style");
+
+    // If it contains exactly one paragraph and it's one of our callout styles,
+    // strip its class and let later steps convert it to your clean callout HTML.
+    const elementChildren = Array.from(div.children);
+    if (elementChildren.length === 1 && elementChildren[0].tagName.toLowerCase() === "p") {
+      const p = elementChildren[0];
+      if (isCalloutP(p)) {
+        p.removeAttribute("style");
+      }
+    }
+  });
+}
+
+function normalizeWordCallouts(doc) {
+  // --- Case 1: Word "Save as HTML" classes (ex: NoteBlock / WarnBlock / ExampleBlock)
+  const classMap = {
+    NoteBlock: "note",
+    WarnBlock: "warning",
+    ExampleBlock: "example",
+  };
+
+  Object.entries(classMap).forEach(([cls, kind]) => {
+    doc.querySelectorAll(`p.${cls}`).forEach((p) => {
+      const callout = doc.createElement("div");
+      callout.className = `callout ${kind}`;
+
+      // Keep the paragraph content, but strip the Word class/style
+      p.classList.remove(cls);
+      p.removeAttribute("style");
+
+      // Move the paragraph into the callout container
+      p.parentNode?.insertBefore(callout, p);
+      callout.appendChild(p);
+    });
+  });
+
+  // --- Case 2: "Copy/paste into ServiceNow" inline-style callouts (border-left + background)
+  // Example you showed:
+  // Note:    border-left: 4px solid #0073E6; background-color: #F9F9F9;
+  // Warning: border-left: 4px solid #FF9800; background-color: #FFF3CD;
+  // Example: border-left: 4px solid #AAAAAA; background-color: #F0F0F0;
+  doc.querySelectorAll("div[style]").forEach((div) => {
+    const style = (div.getAttribute("style") || "").toLowerCase();
+
+    // Quick “is this even a callout-like box?”
+    if (!style.includes("border-left") || !style.includes("background")) return;
+
+    let kind = null;
+    if (style.includes("#0073e6")) kind = "note";
+    else if (style.includes("#ff9800")) kind = "warning";
+    else if (style.includes("#aaaaaa")) kind = "example";
+
+    if (!kind) return;
+
+    const callout = doc.createElement("div");
+    callout.className = `callout ${kind}`;
+
+    // Replace the styled DIV with our clean callout DIV
+    div.parentNode?.insertBefore(callout, div);
+
+    // Keep the content. If it’s already wrapped in <p>, great.
+    // If it’s “loose” text/spans, wrap it in a <p> so it matches your export contract style.
+    const hasP = Array.from(div.childNodes).some(
+      (n) => n.nodeType === 1 && n.tagName.toLowerCase() === "p"
+    );
+
+    if (hasP) {
+      while (div.firstChild) callout.appendChild(div.firstChild);
+    } else {
+      const p = doc.createElement("p");
+      while (div.firstChild) p.appendChild(div.firstChild);
+      callout.appendChild(p);
+    }
+
+    div.remove();
+  });
+}
+
+function normalizeWordOnlinePasteCallouts(doc) {
+  const mapKind = (raw) => {
+    const v = (raw || "").toLowerCase().trim();
+    if (v === "note block" || v === "noteblock") return "note";
+    if (v === "warn block" || v === "warning block" || v === "warnblock") return "warning";
+    if (v === "example block" || v === "exampleblock") return "example";
+    return null;
+  };
+
+  const processed = new Set();
+
+  doc.querySelectorAll("[data-ccp-parastyle]").forEach((el) => {
+    const kind = mapKind(el.getAttribute("data-ccp-parastyle"));
+    if (!kind) return;
+
+    const p = el.closest("p");
+    const target = p || el.closest("div") || null;
+    if (!target) return;
+
+    // don’t double wrap
+    if (target.closest("div.callout")) return;
+    if (processed.has(target)) return;
+    processed.add(target);
+
+    const callout = doc.createElement("div");
+    callout.className = `callout ${kind}`;
+
+    target.parentNode?.insertBefore(callout, target);
+    callout.appendChild(target);
+  });
 }
 
 function serialize(doc) {
@@ -749,13 +1181,18 @@ function serialize(doc) {
 export function cleanHTML(inputHTML) {
   const doc = parseHTML(inputHTML || "");
 
+
+
   // 1) Strip obviously unsafe/noisy stuff
   removeHtmlComments(doc);
   removeOfficeNamespaces(doc);
   removeDangerousNodes(doc);
 
+  normalizeWordParaBorderDivs(doc);
+
   // 2) Word Online / structural cleanup
   flattenWordOnlineWrappers(doc);
+  unwrapSingleRootDiv(doc);
   normalizeWordOnlineHeadings(doc);   // <p role="heading"> → <h1>…<h6>
   normalizeWordOnlineLists(doc);      // 👈 NEW: use data-listid + level info
 
@@ -769,14 +1206,21 @@ export function cleanHTML(inputHTML) {
   removeWordComments(doc);
   applyInlineStyleFormatting(doc);    // span[style] → <strong>/<em>/<u>/<s>/<sup>/<sub>
   removeMsoStyling(doc);              // strip mso-* rules/classes
+  normalizeWordOnlinePasteCallouts(doc);
   normalizeLinks(doc);
+  normalizeBookmarkAnchors(doc);
+  normalizeWordCallouts(doc);
+  flattenMhtWrapperDivs(doc);
 
   // 5) Generic normalization / attribute slimming
   stripNonContentAttributes(doc);     // keep href/src/alt/colspan/... only
+  dedupeIds(doc);
   unwrapEmptySpans(doc);              // span with no attributes → unwrap
   removeEmptyParagraphs(doc);         // nukes &nbsp;/whitespace-only <p>s
 
   normalizeInlineFormatting(doc);     // legacy <b>/<i> → <strong>/<em>
+  normalizeInlineSpacing(doc);        // fix spaces around inline tags
+  normalizeTables(doc);              // unwrap tbody/thead/tfoot; drop colgroup/col
   stripTableBorders(doc);
   unwrapParasInListItems(doc);        // <li><p>foo</p></li> → <li>foo</li>
 

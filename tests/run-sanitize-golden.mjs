@@ -4,7 +4,7 @@ import process from "node:process";
 import { JSDOM } from "jsdom";
 
 // ✅ Import your real functions
-import { cleanHTML } from "../src/services/convert.js";
+import { cleanHTML } from "../src/import/htmlImport.js";
 import { cleanAndNormalizeExportHtml } from "../src/export/htmlExport.js";
 
 /**
@@ -53,9 +53,11 @@ function prettyHtml(html) {
     function attrsToString(el) {
       if (!el.attributes || el.attributes.length === 0) return "";
       const parts = [];
-      for (const attr of el.attributes) {
-        parts.push(`${attr.name}="${attr.value.replace(/"/g, "&quot;")}"`);
-      }
+      const attrs = Array.from(el.attributes).sort((a,b) => a.name.localeCompare(b.name));
+for (const attr of attrs) {
+  parts.push(`${attr.name}="${attr.value.replace(/"/g, "&quot;")}"`);
+}
+
       return " " + parts.join(" ");
     }
 
@@ -90,17 +92,58 @@ function prettyHtml(html) {
         // Void tags
         if (VOID_TAGS.has(tag)) return `${tab.repeat(depth)}<${tag}${attrs}>\n`;
 
-        // Strip tbody wrappers for canonical output
-        if (tag === "tbody") {
-          let out = "";
-          for (const child of node.childNodes) out += formatNode(child, depth);
-          return out;
-        }
+        if (/^h[1-6]$/.test(tag)) {
+  const inner = inlineInnerHTML(node).trim();
+  return `${tab.repeat(depth)}<${tag}${attrs}>${inner}</${tag}>\n`;
+}
+
 
         // Preserve exact text (including newlines) inside <pre> (fixtures rely on this)
         if (tag === "pre") {
           const text = node.textContent || "";
           return `${tab.repeat(depth)}<pre${attrs}>${escapeText(text)}</pre>\n`;
+        }
+
+               // Table handling: keep table structure stable and avoid blank-line noise
+
+        // Strip tbody/thead/tfoot wrappers for canonical output
+        if (tag === "tbody" || tag === "thead" || tag === "tfoot") {
+          let out = "";
+          for (const child of node.childNodes) out += formatNode(child, depth);
+          return out;
+        }
+
+        // Table element: skip whitespace-only text nodes between rows
+        if (tag === "table") {
+          let out = `${tab.repeat(depth)}<table${attrs}>\n`;
+          for (const child of node.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE && /^[ \t\r\n]+$/.test(child.nodeValue || "")) continue;
+            out += formatNode(child, depth + 1);
+          }
+          out += `${tab.repeat(depth)}</table>\n`;
+          return out;
+        }
+
+        // Row element: skip whitespace-only text nodes between cells
+        if (tag === "tr") {
+          let out = `${tab.repeat(depth)}<tr${attrs}>\n`;
+          for (const child of node.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE && /^[ \t\r\n]+$/.test(child.nodeValue || "")) continue;
+            out += formatNode(child, depth + 1);
+          }
+          out += `${tab.repeat(depth)}</tr>\n`;
+          return out;
+        }
+
+        // Cell elements: also skip whitespace-only nodes so Word/DOM doesn't inject blank lines
+        if (tag === "td" || tag === "th") {
+          let out = `${tab.repeat(depth)}<${tag}${attrs}>\n`;
+          for (const child of node.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE && /^[ \t\r\n]+$/.test(child.nodeValue || "")) continue;
+            out += formatNode(child, depth + 1);
+          }
+          out += `${tab.repeat(depth)}</${tag}>\n`;
+          return out;
         }
 
         // Paragraph handling
@@ -162,6 +205,23 @@ if (hasInlineElement) {
           }
           // otherwise fall through
         }
+
+        if (tag === "li") {
+  // If <li> contains NO block children, render on one line
+  const hasBlockChild = Array.from(node.childNodes).some(
+    (c) =>
+      c.nodeType === Node.ELEMENT_NODE &&
+      !INLINE_TAGS.has(c.tagName.toLowerCase()) &&
+      !VOID_TAGS.has(c.tagName.toLowerCase())
+  );
+
+  if (!hasBlockChild) {
+    const inner = inlineInnerHTML(node).trim();
+    return `${tab.repeat(depth)}<li>${inner}</li>\n`;
+  }
+  // otherwise fall through to default block formatting
+}
+
 
         // Inline tags: ALWAYS serialize inline content on one line
         if (INLINE_TAGS.has(tag)) {
@@ -233,6 +293,18 @@ function normalizeEol(s) {
   return (s || "").replace(/\r\n/g, "\n");
 }
 
+function decodeQuotedPrintable(s) {
+  return (s || "")
+    // Remove soft line breaks: "=\r\n" or "=\n"
+    .replace(/=\r?\n/g, "")
+    // Decode =3D, =2F, etc.
+    .replace(/=([0-9A-Fa-f]{2})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    );
+}
+
+
+
 function firstDiffIndex(a, b) {
   const len = Math.min(a.length, b.length);
   for (let i = 0; i < len; i++) if (a[i] !== b[i]) return i;
@@ -256,7 +328,10 @@ const mode = (process.argv.find(a => a.startsWith("--mode=")) || "--mode=export"
 
 installDomShim();
 
-const FIXTURES_ROOT = path.resolve(process.cwd(), "tests/sanitize/fixtures");
+const FIXTURES_ROOT = path.resolve(
+  process.cwd(),
+  mode === "word" ? "tests/sanitize/fixtures_word" : "tests/sanitize/fixtures"
+);
 if (!fs.existsSync(FIXTURES_ROOT)) {
   console.error(`Fixtures folder not found: ${FIXTURES_ROOT}`);
   process.exit(2);
@@ -281,12 +356,20 @@ for (const inPath of inFiles) {
     continue;
   }
 
+
+
   const input = normalizeEol(fs.readFileSync(inPath, "utf-8"));
 const expected = normalizeEol(fs.readFileSync(outPath, "utf-8")).trim();
 
   let raw;
   try {
-    raw = mode === "word" ? cleanHTML(input) : cleanAndNormalizeExportHtml(input);
+const decodedInput =
+  mode === "word" ? decodeQuotedPrintable(input) : input;
+
+raw =
+  mode === "word"
+    ? cleanHTML(decodedInput)
+    : cleanAndNormalizeExportHtml(decodedInput);
   } catch (e) {
     failed++;
     console.error(`\n❌ Pipeline threw for:\n  ${relIn}\n  mode=${mode}\n  ${String(e?.stack || e)}`);
@@ -294,10 +377,21 @@ const expected = normalizeEol(fs.readFileSync(outPath, "utf-8")).trim();
   }
 
   // Match what you actually eyeball/copy: the HTML view “Format” pretty output
-  const actual = normalizeEol(prettyHtml(raw));
+const actual = normalizeEol(prettyHtml(raw)).trim();
+
+const shouldUpdate = process.argv.includes("--update");
 
   if (actual !== expected) {
     failed++;
+    const actualPath = outPath.replace(/\.out\.html$/, ".actual.html");
+fs.writeFileSync(actualPath, actual, "utf8");
+
+if (shouldUpdate) {
+    fs.writeFileSync(outPath, actual, "utf8"); // ✅ overwrite golden
+    process.stdout.write(`📝 updated ${relOut}\n`);
+    failed--; // treat as pass in update mode
+    continue;
+  }
     const idx = firstDiffIndex(actual, expected);
     console.error(`\n❌ MISMATCH\n  IN : ${relIn}\n  OUT: ${relOut}\n  mode=${mode}`);
     console.error(`  First diff index: ${idx}`);

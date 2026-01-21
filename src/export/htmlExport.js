@@ -52,6 +52,8 @@ export function cleanAndNormalizeExportHtml(rawHtml) {
   const ALLOWED_IMG_CLASSES = new Set(["screenshot", "icon"]);
   const CALLOUT_KINDS = new Set(["note", "example", "warning"]);
 
+const ID_OK = /^[_A-Za-z][A-Za-z0-9_\-:.]{0,79}$/;
+
   function isAnchorHref(href) {
     return typeof href === "string" && href.startsWith("#");
   }
@@ -66,6 +68,49 @@ export function cleanAndNormalizeExportHtml(rawHtml) {
       return false;
     }
   }
+
+  function normalizeId(raw) {
+  let id = (raw || "").trim();
+  if (!id) return "";
+
+  // Word likes leading underscores; keep those.
+  id = id.replace(/\s+/g, "_");
+
+  // Strip unsafe chars (keep common safe set)
+  id = id.replace(/[^A-Za-z0-9_\-:.]/g, "");
+
+  // Must not start with a digit for sanity/consistency
+  if (/^\d/.test(id)) id = `id_${id}`;
+
+  // Optional: cap length to keep it reasonable
+  if (id.length > 80) id = id.slice(0, 80);
+
+  return id;
+}
+
+function dedupeIds(doc) {
+  const seen = new Map(); // id -> count
+
+  const all = doc.querySelectorAll("[id]");
+  for (const el of all) {
+    const current = el.getAttribute("id") || "";
+    const normalized = normalizeId(current);
+
+    if (!normalized) {
+      el.removeAttribute("id");
+      continue;
+    }
+
+    const count = (seen.get(normalized) || 0) + 1;
+    seen.set(normalized, count);
+
+    if (count === 1) {
+      el.setAttribute("id", normalized);
+    } else {
+      el.setAttribute("id", `${normalized}-${count}`);
+    }
+  }
+}
 
   function unwrapElement(el) {
     const parent = el.parentNode;
@@ -196,7 +241,7 @@ export function cleanAndNormalizeExportHtml(rawHtml) {
 
     // Only keep class if valid callout
     if (!(hasCallout && kind)) {
-      setAttrsInAlphaOrder(div, []); // remove class
+      unwrapElement(div);
       return;
     }
 
@@ -315,7 +360,6 @@ if (tag === "span") {
     /white-space\s*:\s*pre-wrap/i.test(style)
   ) {
     const kids = Array.from(node.childNodes);
-    unwrapElement(node);          // <-- your helper already exists in this file
     kids.forEach(sanitizeNode);   // sanitize children now that they're moved up
     return;
   }
@@ -371,6 +415,14 @@ if (tag === "span") {
       if (tag !== "th" && tag !== "td") setAttrsInAlphaOrder(node, []);
     }
 
+   if (tag === "h1" || tag === "h2" || tag === "h3") {
+  const rawId = node.getAttribute("id") || "";
+  const id = normalizeId(rawId);
+  setAttrsInAlphaOrder(node, id && ID_OK.test(id) ? [{ name: "id", value: id }] : []);
+}
+
+
+
     // recurse children (copy array first because we may unwrap/remove)
     Array.from(node.childNodes).forEach(sanitizeNode);
 
@@ -385,6 +437,8 @@ if (tag === "span") {
 
   // sanitize all nodes in body
   Array.from(doc.body.childNodes).forEach(sanitizeNode);
+
+  dedupeIds(doc);
 
   // Post-pass: unwrap redundant spans (pure wrappers) using this doc (not global document)
   let out = doc.body.innerHTML.trim();

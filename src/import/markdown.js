@@ -1,4 +1,4 @@
-import { parseHTML } from './convert.js';
+import { parseHTML } from './htmlImport.js';
 
 
 export function htmlToMarkdown(html){

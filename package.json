@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:golden": "node scripts/run-sanitize-golden.mjs --mode=export",
-    "test:golden:word": "node scripts/run-sanitize-golden.mjs --mode=word"
+    "test:golden": "node tests/run-sanitize-golden.mjs --mode=export",
+    "test:golden:word": "node tests/run-sanitize-golden.mjs --mode=word"
   },
   "dependencies": {
     "@lexical/code": "^0.38.2",

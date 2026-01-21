@@ -23,7 +23,7 @@ export function initWordView({
     const cleaned = cleanHTML(rawWordHtml);
 
     docState.setCleanHtml(cleaned, { from: "system" });
-    setActiveView("wysiwyg");
+    setActiveView("html");
   });
 
   // Reset everything

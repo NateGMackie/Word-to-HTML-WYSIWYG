@@ -24,7 +24,7 @@ After this stage, Word content can be scrubbed confidently.
 ## 4. System Responsibilities
 - Strip proprietary tags and attributes
 - Normalize structure
-- Preserve semantic meaning
+- Preserve semantic meaning when the input provides stable semantic signals; otherwise degrade deterministically.
 
 ## 5. Source of Truth
 - `cleanHTML`
@@ -43,3 +43,6 @@ After this stage, Word content can be scrubbed confidently.
 ## 9. Artifacts
 - sanitation pipeline code
 - Word fixture library
+
+## 10. Callout addendum
+For Stage 2, callouts are created only when the input contains an explicit, stable callout identifier (e.g., `p.NoteBlock/WarnBlock/ExampleBlock` in .htm/.mht exports, or `data-ccp-parastyle="Note Block/Warning Block/Example Block"` in Word Web paste). We will not infer callouts from visual styling (border/background) because that’s not a reliable semantic signal. When no explicit identifier exists (notably Desktop Word → ServiceNow paste), content intentionally falls back to normal paragraphs. Fixtures and golden files will encode this contract.
