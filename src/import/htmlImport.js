@@ -1,4 +1,4 @@
-// src/services/convert.js
+// src/import/htmlImport.js
 // Word → Clean HTML pipeline (lifted from your working prototype)
 
 // --- Parse into a separate DOM document ---
@@ -109,6 +109,19 @@ function normalizeInlineSpacing(doc) {
   });
 }
 
+function normalizeWordEscapes(html) {
+  if (!html) return html;
+
+  // Word/Windows-1252 artifacts that sometimes come through as literal backslash codes.
+  // \92 is the big one: right single quote (apostrophe).
+  return html
+    .replace(/\\92/g, "'")   // item\92s -> item's
+    .replace(/\\91/g, "'")   // left single quote -> '
+    .replace(/\\93/g, '"')   // left double quote -> "
+    .replace(/\\94/g, '"')   // right double quote -> "
+    .replace(/\\96/g, "-")   // en dash -> -
+    .replace(/\\97/g, "--"); // em dash -> --
+}
 
 // ===== Extra normalization for modern Word / Word Online HTML =====
 
@@ -124,61 +137,137 @@ function normalizeWordOnlineHeadings(doc) {
   });
 }
 
+function ensureInDocAnchorTargets(doc) {
+  // Collect in-doc href targets: "#foo"
+  const targets = new Set();
+  doc.querySelectorAll('a[href^="#"]').forEach((a) => {
+    const href = (a.getAttribute("href") || "").trim();
+    if (href.length > 1) targets.add(href.slice(1));
+  });
+
+  const hasId = (id) => !!doc.getElementById(id);
+
+  // Normalize helper: "_This_is_the" -> ["this","is","the"]
+  const tokensFromId = (id) =>
+    id
+      .replace(/^_+/, "")
+      .split(/[_\-\s]+/)
+      .filter(Boolean)
+      .map((t) => t.toLowerCase());
+
+  const textTokens = (el) =>
+    (el.textContent || "")
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  const headings = Array.from(doc.querySelectorAll("h1,h2,h3,h4,h5,h6"));
+
+  targets.forEach((id) => {
+    if (hasId(id)) return;
+
+    const wanted = tokensFromId(id);
+    if (!wanted.length) return;
+
+    // Find the first heading whose first N words match the id tokens
+    const match = headings.find((h) => {
+      const tt = textTokens(h);
+      if (tt.length < wanted.length) return false;
+      for (let i = 0; i < wanted.length; i++) {
+        if (tt[i] !== wanted[i]) return false;
+      }
+      return true;
+    });
+
+    if (match) {
+      match.setAttribute("id", id);
+      return;
+    }
+
+    // Fallback: insert a marker at the top of the document
+    const marker = doc.createElement("span");
+    marker.setAttribute("id", id);
+    doc.body.insertBefore(marker, doc.body.firstChild);
+  });
+}
+
+
 function normalizeLinks(doc) {
   const allowedSchemes = new Set(["http:", "https:", "mailto:"]);
-  const anchors = doc.querySelectorAll("a[href]");
 
-  anchors.forEach((a) => {
-    const hrefRaw = (a.getAttribute("href") || "").trim();
+  doc.querySelectorAll("a[href]").forEach((a) => {
+    const href = (a.getAttribute("href") || "").trim();
 
     // Empty href => unwrap
-    if (!hrefRaw) {
+    if (!href) {
       a.replaceWith(...a.childNodes);
       return;
     }
 
-    const schemeMatch = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.exec(hrefRaw);
-if (schemeMatch) {
-  const scheme = schemeMatch[0].toLowerCase(); // e.g. "javascript:"
-  if (!allowedSchemes.has(scheme)) {
-    a.replaceWith(...a.childNodes);
-    return;
-  }
-}
-
-    // Anchor link
-    if (hrefRaw.startsWith("#")) {
-      // Keep only href (strip target/rel/etc.)
+    // Pure in-doc anchors => keep only href
+    if (href.startsWith("#")) {
       Array.from(a.attributes).forEach((attr) => {
         if (attr.name !== "href") a.removeAttribute(attr.name);
       });
       return;
     }
 
-    // Parse scheme safely
+        // Word "bookmark://Some_Target" => treat as in-doc anchor "#Some_Target"
+    if (/^bookmark:\/\//i.test(href)) {
+      const raw = href.replace(/^bookmark:\/\//i, "");
+      const target = raw.trim();
+      if (!target) {
+        a.replaceWith(...a.childNodes);
+        return;
+      }
+
+      a.setAttribute("href", "#" + target);
+
+      // Keep only href (in-doc anchor)
+      Array.from(a.attributes).forEach((attr) => {
+        if (attr.name !== "href") a.removeAttribute(attr.name);
+      });
+      return;
+    }
+
+
+    // Convert file/about links that include a hash into hash-only anchors
+        const hashIndex = href.indexOf("#");
+    if (hashIndex !== -1 && /^(file:|about:)/i.test(href)) {
+      const frag = href.slice(hashIndex); // "#_Toc123"
+      if (frag.length <= 1) {
+        a.replaceWith(...a.childNodes);
+        return;
+      }
+      a.setAttribute("href", frag);
+      Array.from(a.attributes).forEach((attr) => {
+        if (attr.name !== "href") a.removeAttribute(attr.name);
+      });
+      return;
+    }
+
+
+    // Parse scheme safely (supports relative links too)
     let url;
     try {
-      url = new URL(hrefRaw, "https://example.invalid"); // base for relative
+      url = new URL(href, "https://example.invalid");
     } catch {
-      // If it's not parseable, unwrap
       a.replaceWith(...a.childNodes);
       return;
     }
-
-    const scheme = url.protocol;
 
     // Disallowed scheme => unwrap
-    if (!allowedSchemes.has(scheme)) {
+    if (!allowedSchemes.has(url.protocol)) {
       a.replaceWith(...a.childNodes);
       return;
     }
 
-    // External http(s): enforce rel/target (matches export contract)
-    if (scheme === "http:" || scheme === "https:") {
+    // External http(s): enforce rel/target
+    if (url.protocol === "http:" || url.protocol === "https:") {
       a.setAttribute("target", "_blank");
       a.setAttribute("rel", "noopener noreferrer");
     } else {
-      // mailto: should not get target/rel by default
       a.removeAttribute("target");
       a.removeAttribute("rel");
     }
@@ -191,6 +280,7 @@ if (schemeMatch) {
     });
   });
 }
+
 
 
 // 2) Flatten wrapper divs that Word Online loves to sprinkle everywhere
@@ -249,6 +339,39 @@ function unwrapSingleRootDiv(doc) {
   root.remove();
 }
 
+function normalizeWordSemanticSpans(doc) {
+  doc.querySelectorAll("span").forEach((span) => {
+    const cls = (span.getAttribute("class") || "").trim();
+    const clsLower = cls.toLowerCase();
+
+    const ccp =
+      (span.getAttribute("data-ccp-charstyle") ||
+        span.getAttribute("data-ccp-char-style") ||
+        "").trim().toLowerCase();
+
+    // Class-based (desktop / macro Word)
+    if (clsLower === "userinput") {
+      span.setAttribute("class", "user-input");
+      return;
+    }
+    if (clsLower === "userinputvariable") {
+      span.setAttribute("class", "variable");
+      return;
+    }
+
+    // Word Web / Word Online often uses data-ccp-charstyle
+    if (ccp.includes("userinputvariable") || ccp.includes("user input variable")) {
+      span.setAttribute("class", "variable");
+      return;
+    }
+    if (ccp.includes("userinput") || ccp.includes("user input")) {
+      span.setAttribute("class", "user-input");
+      return;
+    }
+  });
+}
+
+
 // 3) Strip non-content attributes (classes, inline styles, data-*, etc.)
 //    but KEEP things that matter for content: href, src, alt, colspan, etc.
 function stripNonContentAttributes(doc) {
@@ -269,6 +392,8 @@ function stripNonContentAttributes(doc) {
   ]);
 
   const allowedCalloutKinds = new Set(["note", "warning", "example"]);
+  const allowedSpanClasses = new Set(["user-input", "variable"]);
+  const allowedImgClasses = new Set(["screenshot", "icon"]); // optional, per contract
 
   const isAllowedCalloutClass = (el) => {
     if (el.tagName.toLowerCase() !== "div") return false;
@@ -278,28 +403,45 @@ function stripNonContentAttributes(doc) {
     const parts = cls.split(/\s+/).filter(Boolean);
     if (!parts.includes("callout")) return false;
 
-    // must contain exactly one known kind
     const kind = parts.find((p) => p !== "callout");
     return !!kind && allowedCalloutKinds.has(kind);
+  };
+
+  const isAllowedSemanticSpanClass = (el) => {
+    if (el.tagName.toLowerCase() !== "span") return false;
+    const cls = (el.getAttribute("class") || "").trim().toLowerCase();
+    return allowedSpanClasses.has(cls);
+  };
+
+  const isAllowedImgClass = (el) => {
+    if (el.tagName.toLowerCase() !== "img") return false;
+    const cls = (el.getAttribute("class") || "").trim().toLowerCase();
+    if (!cls) return false;
+    // allow a single token for now
+    return allowedImgClasses.has(cls);
   };
 
   doc.querySelectorAll("*").forEach((el) => {
     Array.from(el.attributes).forEach((attr) => {
       const name = attr.name.toLowerCase();
 
-      // If not in base keep list, drop it.
       if (!keep.has(name)) {
         el.removeAttribute(attr.name);
         return;
       }
 
-      // Special rule: keep class ONLY when it’s a recognized callout.
-      if (name === "class" && !isAllowedCalloutClass(el)) {
-        el.removeAttribute("class");
+      if (name === "class") {
+        const ok =
+          isAllowedCalloutClass(el) ||
+          isAllowedSemanticSpanClass(el) ||
+          isAllowedImgClass(el);
+
+        if (!ok) el.removeAttribute("class");
       }
     });
   });
 }
+
 
 
 // 4) After attributes are stripped, a ton of <span> wrappers become useless.
@@ -335,8 +477,19 @@ function removeEmptyParagraphs(doc) {
 
 // Turn Word/Word Online style-based formatting into semantic tags
 function applyInlineStyleFormatting(doc) {
-  doc.querySelectorAll('span[style]').forEach(span => {
-    let style = (span.getAttribute('style') || '').toLowerCase();
+  doc.querySelectorAll("span[style]").forEach((span) => {
+    // ✅ Skip semantic spans (keep user-input / variable intact)
+    const cls = (span.getAttribute("class") || "").toLowerCase().trim();
+    if (
+      cls === "user-input" ||
+      cls === "variable" ||
+      cls === "userinput" ||
+      cls === "userinputvariable"
+    ) {
+      return;
+    }
+
+    const style = (span.getAttribute("style") || "").toLowerCase();
     if (!style) return;
 
     const isBold = /font-weight\s*:\s*(bold|[7-9]00)/.test(style);
@@ -352,25 +505,21 @@ function applyInlineStyleFormatting(doc) {
 
     const wrap = (tagName) => {
       const wrapper = doc.createElement(tagName);
-      // move contents into wrapper
-      while (node.firstChild) {
-        wrapper.appendChild(node.firstChild);
-      }
-      // replace current node with wrapper
+      while (node.firstChild) wrapper.appendChild(node.firstChild);
       node.parentNode.insertBefore(wrapper, node);
       node.remove();
       node = wrapper;
     };
 
-    // Order doesn’t hugely matter, but this reads well
-    if (isBold)       wrap('strong');
-    if (isItalic)     wrap('em');
-    if (hasUnderline) wrap('u');
-    if (hasStrike)    wrap('s');
-    if (isSup)        wrap('sup');
-    if (isSub)        wrap('sub');
+    if (isBold) wrap("strong");
+    if (isItalic) wrap("em");
+    if (hasUnderline) wrap("u");
+    if (hasStrike) wrap("s");
+    if (isSup) wrap("sup");
+    if (isSub) wrap("sub");
   });
 }
+
 
 
 // Remove Word's Mso* classes and mso-* inline styles (run AFTER list/heading detection!)
@@ -407,60 +556,123 @@ function removeMsoStyling(doc) {
   });
 }
 
-// ---- List conversion helpers (handles real Word levels + style-change heuristics) ----
+function olTypeFromStyleType(styleType) {
+  const v = (styleType || "").toLowerCase();
+  if (v === "lower-alpha") return "a";
+  if (v === "upper-alpha") return "A";
+  if (v === "lower-roman") return "i";
+  if (v === "upper-roman") return "I";
+  return null; // decimal/default
+}
+
+function styleTypeFromOlType(typeAttr) {
+  const t = (typeAttr || "").trim();
+  if (t === "a") return "lower-alpha";
+  if (t === "A") return "upper-alpha";
+  if (t === "i") return "lower-roman";
+  if (t === "I") return "upper-roman";
+  return null;
+}
+
 function getListInfo(p) {
   const cls = p.className || "";
-  const style = (p.getAttribute("style") || "").toLowerCase();
+  const styleRaw = p.getAttribute("style") || "";
+  const style = styleRaw.toLowerCase();
   const text = (p.textContent || "").trim();
 
-  // Word flags
   const hasWordFlag = /mso-list/.test(style) || /MsoListParagraph/i.test(cls);
 
-  // Parse explicit Word list id + level:  mso-list:l0 level2 lfo1
   let listId = null;
   let level = null;
-  const mWord = /mso-list:\s*l(\d+)\s+level(\d+)/i.exec(style);
+
+  // track whether Word gave us a real level
+  let explicitLevel = false;
+
+  const mWord = /mso-list:\s*l(\d+)\s+level(\d+)/i.exec(styleRaw);
   if (mWord) {
     listId = Number(mWord[1]);
     level = Math.max(1, parseInt(mWord[2], 10));
+    explicitLevel = true;
   }
-  const firstChar = (text || "").replace(/^\s+/, "")[0];
-const wordBulletGlyphs = new Set(["o", "§", "·"]);
-if (hasWordFlag && wordBulletGlyphs.has(firstChar)) {
-  return { type: "ul", level, styleType: null, listId };
-}
 
   // Fallback: "levelN" elsewhere
   if (level == null) {
-    const mLevel = /level\s*([0-9]+)/i.exec(style);
-    if (mLevel) level = Math.max(1, parseInt(mLevel[1], 10));
-  }
-
-  // As a last resort, infer from margin-left
-  if (level == null) {
-    const mMargin = /margin-left:\s*([0-9.]+)\s*([a-z%]+)/.exec(style);
-    if (mMargin) {
-      let px = parseFloat(mMargin[1]);
-      const unit = mMargin[2];
-      if (unit === "in") px *= 96;
-      else if (unit === "pt") px *= 1.333;
-      else if (unit === "cm") px *= 37.8;
-      else if (unit === "mm") px *= 3.78;
-      else if (unit === "em") px *= 16;
-      else if (unit === "%") px = 0;
-      level = Math.max(1, Math.min(8, Math.round(px / 18) + 1));
+    const mLevel = /level\s*([0-9]+)/i.exec(styleRaw);
+    if (mLevel) {
+      level = Math.max(1, parseInt(mLevel[1], 10));
+      explicitLevel = true;
     }
   }
+
+    // ✅ NEW: infer nesting from indentation when Word didn't provide a level
+if (level == null) {
+  const readLenPx = (prop) => {
+    // 1) Prefer the parsed inline style (browser normalizes units better)
+    const direct = (p.style && (p.style[prop] || p.style.getPropertyValue(prop))) || "";
+    if (direct) {
+      const m = /(-?[\d.]+)\s*(px|pt|in|cm|mm)?/i.exec(direct.trim());
+      if (m) {
+        const v = parseFloat(m[1]);
+        const unit = (m[2] || "px").toLowerCase();
+        if (Number.isFinite(v)) {
+          if (unit === "px") return v;
+          if (unit === "pt") return v * (96 / 72);
+          if (unit === "in") return v * 96;
+          if (unit === "cm") return v * (96 / 2.54);
+          if (unit === "mm") return v * (96 / 25.4);
+          return v;
+        }
+      }
+    }
+
+    // 2) Fallback: regex parse from raw style string
+    const re = new RegExp(`${prop}\\s*:\\s*(-?[\\d.]+)\\s*(pt|px|in|cm|mm)`, "i");
+    const m = re.exec(styleRaw);
+    if (!m) return null;
+
+    const v = parseFloat(m[1]);
+    const unit = (m[2] || "px").toLowerCase();
+    if (!Number.isFinite(v)) return null;
+
+    if (unit === "px") return v;
+    if (unit === "pt") return v * (96 / 72);
+    if (unit === "in") return v * 96;
+    if (unit === "cm") return v * (96 / 2.54);
+    if (unit === "mm") return v * (96 / 25.4);
+    return v;
+  };
+
+  const ml = readLenPx("marginLeft") ?? readLenPx("margin-left") ?? 0;
+  const pl = readLenPx("paddingLeft") ?? readLenPx("padding-left") ?? 0;
+  const ti = readLenPx("textIndent") ?? readLenPx("text-indent") ?? 0;
+
+  // Hanging indents are usually negative; don’t let them erase nesting.
+  const indentPx = ml + pl + Math.max(0, ti);
+
+  // Word commonly nests by ~18pt (~24px). Keep your tuning.
+  const PX_PER_LEVEL = 24;
+  const THRESHOLD = 8;
+
+  let inferred = 1;
+  if (indentPx > THRESHOLD) {
+    inferred = 1 + Math.floor((indentPx + PX_PER_LEVEL * 0.4) / PX_PER_LEVEL);
+  }
+
+  level = Math.max(1, Math.min(6, inferred));
+  // NOTE: explicitLevel stays false on purpose
+}
+
+
+
   if (level == null) level = 1;
 
-  // Determine list type from visible marker
-  const bulletRe = /^[\u2022\u00B7\u2219\u25AA\u25CF\-*]/;
+  // bullet detection tweak: allow "o " as a bullet marker (common in Word HTML)
+  const bulletRe = /^(?:[\u2022\u00B7\u2219\u25AA\u25CF\-*]|o(?=\s))/;
   const orderedRe = /^(?:\d+|[A-Za-z]+|[ivxlcdm]+)[.)]/i;
   if (!(hasWordFlag || bulletRe.test(text) || orderedRe.test(text))) return null;
 
   const type = bulletRe.test(text) ? "ul" : "ol";
 
-  // Optional: cosmetics + heuristics
   let styleType = null;
   if (type === "ol") {
     if (/^[a-z][.)]/.test(text)) styleType = "lower-alpha";
@@ -468,8 +680,13 @@ if (hasWordFlag && wordBulletGlyphs.has(firstChar)) {
     else if (/^(?:[ivxlcdm]+)[.)]/i.test(text)) styleType = "lower-roman";
   }
 
-  return { type, level, styleType, listId };
+  if (type === "ul" && !explicitLevel) {
+  level = 1;
 }
+
+  return { type, level, styleType, listId, explicitLevel };
+}
+
 
 function stripListMarkersDOM(p) {
   // 1) Remove Word marker helper spans everywhere in <p>
@@ -487,7 +704,7 @@ function stripListMarkersDOM(p) {
 
   // Bullet or number/alpha/roman (optional "("), then "." or ")"
   const markerRE =
-    /^(?:[\u2022\u00B7\u2219\u25AA\u25CF\-*]|(?:\(?(?:\d+|[A-Za-z]+|[ivxlcdm]+)[.)]))\s*/i;
+  /^(?:[\u2022\u00B7\u2219\u25AA\u25CF\-*]|o(?=\s)|(?:\(?(?:\d+|[A-Za-z]+|[ivxlcdm]+)[.)]))\s*/i;
 
   function trimFromNode(node) {
     if (!node) return false;
@@ -577,6 +794,18 @@ function normalizeWordOnlineLists(doc) {
   const root = doc.body;
   let node = root.firstElementChild;
 
+  // Read list-style-type from either inline style attribute or computed style string
+  const readListStyleType = (el) => {
+    if (!el) return "";
+    // prefer explicit style attr (Word often uses inline style)
+    const styleAttr = (el.getAttribute("style") || "").toLowerCase();
+    const m = /list-style-type\s*:\s*([^;]+)/i.exec(styleAttr);
+    if (m) return (m[1] || "").trim();
+    // fallback: DOM style property (sometimes set)
+    const prop = (el.style?.listStyleType || "").trim();
+    return prop;
+  };
+
   while (node) {
     const tag = node.tagName;
     if (tag !== "OL" && tag !== "UL") {
@@ -592,25 +821,53 @@ function normalizeWordOnlineLists(doc) {
       continue;
     }
 
-    // Collect this list and any immediately following sibling lists
-    // that share the same tag and listId (Word Online = same logical list).
     const lists = [node];
     let cursor = node.nextElementSibling;
-    while (cursor && cursor.tagName === tag) {
+
+    const isIgnorableBetweenLists = (el) => {
+      if (!el) return false;
+      if (el.tagName === "BR") return true;
+      if (el.tagName === "P") {
+        const t = (el.textContent || "").replace(/\u00A0/g, " ").trim();
+        return t === "" || el.innerHTML.trim() === "<br>";
+      }
+      return false;
+    };
+
+    while (cursor) {
+      if (cursor.tagName !== tag) {
+        if (isIgnorableBetweenLists(cursor)) {
+          cursor = cursor.nextElementSibling;
+          continue;
+        }
+        break;
+      }
+
       const li = cursor.querySelector("li");
       const cursorListId = li && li.getAttribute("data-listid");
       if (cursorListId !== listId) break;
+
       lists.push(cursor);
       cursor = cursor.nextElementSibling;
     }
 
-    // If there's only one list, we still might want to normalize nesting,
-    // but for now we only bother when there are multiple segments.
-    if (lists.length > 1) {
+    const hasNestedLevels = lists.some((l) =>
+      Array.from(l.querySelectorAll("li")).some((li) => {
+        const levelAttr =
+          li.getAttribute("data-aria-level") || li.getAttribute("aria-level");
+        const level = parseInt(levelAttr || "1", 10);
+        return Number.isFinite(level) && level > 1;
+      })
+    );
+
+    if (lists.length > 1 || hasNestedLevels) {
       const combined = doc.createElement(tag);
 
       // Stack of lists by level; index = level - 1
       const listStack = [combined];
+
+      // level -> styleType string (lower-alpha, lower-roman, etc.)
+      const styleForLevel = new Map();
 
       const ensureLevel = (level) => {
         if (level < 1) level = 1;
@@ -619,17 +876,23 @@ function normalizeWordOnlineLists(doc) {
         while (listStack.length < level) {
           const parentList = listStack[listStack.length - 1];
           const parentLi = parentList.lastElementChild;
-          if (!parentLi) break; // can't nest yet if there's no parent <li>
+          if (!parentLi) break;
 
           const newList = doc.createElement(tag);
+
+          // Apply <ol type="..."> for styling that survives attribute stripping
+          if (tag === "OL") {
+            const st = styleForLevel.get(listStack.length + 1); // level we are creating
+            const typeAttr = olTypeFromStyleType(st);
+            if (typeAttr) newList.setAttribute("type", typeAttr);
+          }
+
           parentLi.appendChild(newList);
           listStack.push(newList);
         }
 
         // Shrink: pop back to the requested level
-        while (listStack.length > level) {
-          listStack.pop();
-        }
+        while (listStack.length > level) listStack.pop();
       };
 
       // Walk all lis in DOM order across the sequence
@@ -638,11 +901,23 @@ function normalizeWordOnlineLists(doc) {
           if (li.tagName !== "LI") return;
 
           const levelAttr =
-            li.getAttribute("data-aria-level") ||
-            li.getAttribute("aria-level");
-
+            li.getAttribute("data-aria-level") || li.getAttribute("aria-level");
           let level = parseInt(levelAttr || "1", 10);
           if (!Number.isFinite(level) || level < 1) level = 1;
+
+          // Capture style info from the source list segment at this level
+          if (tag === "OL") {
+            const stRaw = readListStyleType(li.parentElement);
+            // normalize to our canonical names
+            const st =
+              stRaw === "lower-alpha" ? "lower-alpha" :
+              stRaw === "upper-alpha" ? "upper-alpha" :
+              stRaw === "lower-roman" ? "lower-roman" :
+              stRaw === "upper-roman" ? "upper-roman" :
+              null;
+
+            if (st) styleForLevel.set(level, st);
+          }
 
           ensureLevel(level);
 
@@ -650,6 +925,13 @@ function normalizeWordOnlineLists(doc) {
           currentList.appendChild(li); // Move <li> into the combined structure
         });
       });
+
+      // Also apply style to the top-level combined list if known
+      if (tag === "OL") {
+        const st1 = styleForLevel.get(1);
+        const t1 = olTypeFromStyleType(st1);
+        if (t1) combined.setAttribute("type", t1);
+      }
 
       // Insert combined list before the first original list
       root.insertBefore(combined, node);
@@ -664,7 +946,6 @@ function normalizeWordOnlineLists(doc) {
     node = node.nextElementSibling;
   }
 }
-
 
 function convertListsInDoc(doc) {
   const root = doc.body;
@@ -688,8 +969,14 @@ function convertListsInDoc(doc) {
   // Remember the most recent emitted <li> (for "carry-over" nesting)
   let lastLiGlobal = null;
 
-  const olStyle = (el) =>
-    (el && el.style && el.style.listStyleType) || "decimal";
+  // Read list style from <ol type="a|A|i|I"> (since we strip style attrs later)
+  const olStyle = (el) => {
+    if (!el) return "decimal";
+    const t = el.getAttribute && el.getAttribute("type");
+    const st = styleTypeFromOlType(t);
+    return st || "decimal";
+  };
+
   const styleRank = (type, styleType) => {
     if (type !== "ol") return 0;
     const st = (styleType || "decimal").toLowerCase();
@@ -700,7 +987,12 @@ function convertListsInDoc(doc) {
 
   function pushList(info, parentLi) {
     const list = doc.createElement(info.type);
-    if (info.styleType) list.style.listStyleType = info.styleType;
+
+    // Use <ol type="..."> instead of inline style
+    if (info.type === "ol" && info.styleType) {
+      const t = olTypeFromStyleType(info.styleType);
+      if (t) list.setAttribute("type", t);
+    }
 
     if (parentLi) {
       parentLi.appendChild(list);
@@ -731,29 +1023,45 @@ function convertListsInDoc(doc) {
   }
 
   function isTrivialParagraph(node) {
-    if (
-      !(
-        node &&
-        node.nodeType === Node.ELEMENT_NODE &&
-        node.tagName === "P"
-      )
-    )
-      return false;
+    if (!(node && node.nodeType === Node.ELEMENT_NODE && node.tagName === "P")) return false;
     const txt = (node.textContent || "").replace(/\u00A0/g, " ").trim();
     return txt === "";
+  }
+
+  function isIgnorableBetweenListItems(node) {
+    if (!node) return false;
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      return (node.nodeValue || "").trim() === "";
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return false;
+
+    if (node.tagName === "BR") return true;
+
+    if (node.tagName === "P") {
+      const t = (node.textContent || "").replace(/\u00A0/g, " ").trim();
+      return t === "" || node.innerHTML.trim().toLowerCase() === "<br>";
+    }
+
+    return false;
   }
 
   let i = 0;
   while (i < nodes.length) {
     const n = nodes[i];
 
+    // List paragraphs
     if (n.nodeType === Node.ELEMENT_NODE && n.tagName === "P") {
       let info = getListInfo(n);
+
       if (info) {
         // If a list is open, decide nest/pop based on style rank (decimal < alpha < roman)
         if (stack.length) {
           const cur = current();
+
           if (
+            !info.explicitLevel && // only invent nesting when we had to infer
             info.type === "ol" &&
             cur.type === "ol" &&
             info.level <= cur.level
@@ -761,61 +1069,45 @@ function convertListsInDoc(doc) {
             const curRank = styleRank(cur.type, cur.styleType);
             const newRank = styleRank(info.type, info.styleType);
             if (newRank > curRank) {
-              // decimal -> alpha/roman: go one level deeper
               info.level = cur.level + 1;
             } else if (newRank < curRank) {
-              // alpha/roman -> decimal: pop one level
               info.level = Math.max(1, cur.level - 1);
             }
           }
+
           // clamp jumps to at most one deeper
           if (info.level > current().level + 1) info.level = current().level + 1;
         } else if (lastLiGlobal) {
           // Stack is empty but previous output was an <li>.
           const parentList = lastLiGlobal.parentElement;
-          const parentIsOl =
-            parentList && parentList.tagName === "OL";
-          const parentRank = parentIsOl
-            ? styleRank("ol", olStyle(parentList))
-            : 0;
-          const newRank =
-            info.type === "ol" ? styleRank("ol", info.styleType) : 0;
-          const prevIntro = /[:：]\s*$/.test(
-            (lastLiGlobal.textContent || "")
-          );
+          const parentIsOl = parentList && parentList.tagName === "OL";
+          const parentRank = parentIsOl ? styleRank("ol", olStyle(parentList)) : 0;
 
-          // Only carry-over nest if rank increases (or previous li ended with ":")
-          if (newRank > parentRank || prevIntro) {
-            info.level = (lastLiGlobal._level || 1) + 1;
-            pushList(info, lastLiGlobal);
-          }
+          const newRank = info.type === "ol" ? styleRank("ol", info.styleType) : 0;
+          const prevIntro = /[:：]\s*$/.test((lastLiGlobal.textContent || ""));
+
+          if (info.type === "ol" && (newRank > parentRank || prevIntro)) {
+  info.level = (lastLiGlobal._level || 1) + 1;
+  pushList(info, lastLiGlobal);
+}
         }
+
+
         
-// Before opening/continuing lists for this item:
-if (stack.length && info.level < current().level) {
-  closeTo(info.level);
-}
+        // If level decreased, pop back
+        if (stack.length && info.level < current().level) closeTo(info.level);
 
-if (stack.length) {
-  // If level decreased, pop back
-  if (info.level < current().level) closeTo(info.level);
-
-  // If same level but list type changed (ul <-> ol), pop to parent so we can start a sibling list cleanly
-  if (info.level === current().level && info.type !== current().type) closeTo(info.level - 1);
-}
-
+        if (stack.length) {
+          // If same level but list type changed, pop to parent so we can start a sibling list
+          if (info.level === current().level && info.type !== current().type) closeTo(info.level - 1);
+        }
 
         // Open/continue the appropriate list at the target level
-        if (
-          !stack.length ||
-          current().level < info.level ||
-          current().type !== info.type
-        ) {
+        if (!stack.length || current().level < info.level || current().type !== info.type) {
           pushList(info);
         } else if (
           current().type === "ol" &&
-          (info.styleType || "decimal") !==
-            (current().styleType || "decimal")
+          (info.styleType || "decimal") !== (current().styleType || "decimal")
         ) {
           // same level but different numbering → sibling list (not nested)
           closeTo(info.level - 1);
@@ -832,19 +1124,28 @@ if (stack.length) {
 
         i++;
         continue;
-      } else if (stack.length && isTrivialParagraph(n)) {
-        // ignore blank spacer paragraphs inside lists
+      }
+
+      // Blank spacer paragraphs inside lists
+      if (stack.length && isTrivialParagraph(n)) {
         i++;
         continue;
       }
     }
 
-    // For any other node: if it's whitespace-only text we already skipped it above.
-    // Close lists only on meaningful non-list content.
+    // If we're inside a list and this node is just spacing, skip it WITHOUT closing.
+    if (stack.length && isIgnorableBetweenListItems(n)) {
+      i++;
+      continue;
+    }
+
+    // Otherwise, meaningful non-list content closes lists and is appended once.
     closeTo(0);
     frag.appendChild(n.cloneNode(true));
     i++;
   }
+
+  
 
   closeTo(0);
   root.innerHTML = "";
@@ -852,26 +1153,70 @@ if (stack.length) {
 }
 
 function mergeAdjacentLists(doc) {
-  const root = doc.body;
-  let n = root.firstElementChild;
-  while (n) {
-    if (n.tagName === "OL" || n.tagName === "UL") {
-      let next = n.nextElementSibling;
-      while (
-        next &&
-        next.tagName === n.tagName &&
-        (next.getAttribute("style") || "") ===
-          (n.getAttribute("style") || "")
-      ) {
-        while (next.firstElementChild) n.appendChild(next.firstElementChild);
-        const drop = next;
-        next = next.nextElementSibling;
-        drop.remove();
-      }
+  const isIgnorable = (node) => {
+    if (!node) return false;
+
+    // whitespace-only text
+    if (node.nodeType === Node.TEXT_NODE) return (node.nodeValue || "").trim() === "";
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return false;
+
+    if (node.tagName === "BR") return true;
+
+    if (node.tagName === "P") {
+      const t = (node.textContent || "").replace(/\u00A0/g, " ").trim();
+      return t === "" || node.innerHTML.trim().toLowerCase() === "<br>";
     }
-    n = n.nextElementSibling;
-  }
+
+    return false;
+  };
+
+  const sameListKind = (a, b) => {
+    if (!a || !b) return false;
+    if (a.tagName !== b.tagName) return false;
+    if (a.tagName === "OL") return (a.getAttribute("type") || "") === (b.getAttribute("type") || "");
+    return true; // UL
+  };
+
+  // Walk every element container, not just body
+  const parents = [doc.body, ...Array.from(doc.body.querySelectorAll("*"))];
+
+  parents.forEach((parent) => {
+    // We use childNodes so we can see text nodes / empty <p> between lists
+    let i = 0;
+    while (i < parent.childNodes.length) {
+      const node = parent.childNodes[i];
+
+      if (node?.nodeType === Node.ELEMENT_NODE && (node.tagName === "UL" || node.tagName === "OL")) {
+        // Find the next *meaningful* sibling after ignorable stuff
+        let j = i + 1;
+        while (j < parent.childNodes.length && isIgnorable(parent.childNodes[j])) j++;
+
+        while (j < parent.childNodes.length) {
+          const next = parent.childNodes[j];
+
+          if (!(next?.nodeType === Node.ELEMENT_NODE && (next.tagName === "UL" || next.tagName === "OL"))) break;
+          if (!sameListKind(node, next)) break;
+
+          // Move LI children over
+          while (next.firstElementChild) node.appendChild(next.firstElementChild);
+
+          // Remove the merged list
+          const toRemove = next;
+          // After removing, don't advance j; the list shrinks
+          parent.removeChild(toRemove);
+
+          // Skip any ignorable nodes again
+          while (j < parent.childNodes.length && isIgnorable(parent.childNodes[j])) j++;
+        }
+      }
+
+      i++;
+    }
+  });
 }
+
+
 
 function normalizeListStarts(doc) {
   doc.querySelectorAll('ol[start]').forEach(ol => {
@@ -1179,9 +1524,8 @@ function serialize(doc) {
 // ===== Public API =====
 // Order matters – this is your tuned pipeline from the prototype.
 export function cleanHTML(inputHTML) {
-  const doc = parseHTML(inputHTML || "");
-
-
+  const normalizedInput = normalizeWordEscapes(inputHTML || "");
+  const doc = parseHTML(normalizedInput);
 
   // 1) Strip obviously unsafe/noisy stuff
   removeHtmlComments(doc);
@@ -1194,6 +1538,7 @@ export function cleanHTML(inputHTML) {
   flattenWordOnlineWrappers(doc);
   unwrapSingleRootDiv(doc);
   normalizeWordOnlineHeadings(doc);   // <p role="heading"> → <h1>…<h6>
+
   normalizeWordOnlineLists(doc);      // 👈 NEW: use data-listid + level info
 
   // 3) Headings and lists (classic Word HTML)
@@ -1204,10 +1549,12 @@ export function cleanHTML(inputHTML) {
 
   // 4) Word comments and inline styles
   removeWordComments(doc);
+    normalizeWordSemanticSpans(doc);
   applyInlineStyleFormatting(doc);    // span[style] → <strong>/<em>/<u>/<s>/<sup>/<sub>
   removeMsoStyling(doc);              // strip mso-* rules/classes
   normalizeWordOnlinePasteCallouts(doc);
   normalizeLinks(doc);
+  ensureInDocAnchorTargets(doc);
   normalizeBookmarkAnchors(doc);
   normalizeWordCallouts(doc);
   flattenMhtWrapperDivs(doc);

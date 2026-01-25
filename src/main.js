@@ -1,5 +1,5 @@
 // src/main.js
-import { createDocState } from './services/docState.js';
+import { createDocState } from './import/docState.js';
 import { initWordView } from './views/word.js';
 import { initHtmlView } from './views/html.js';
 import { importHtmlToEditor } from './editor/importHtmlToEditor.js';
@@ -365,7 +365,7 @@ let suppressWysiwygToHtml = false;
   initHtmlView({
   elements: sharedElements,
   docState,
-  applyHtmlToWysiwyg: (html) => {
+  loadHtmlIntoEditor: (html) => {
     if (!lexicalEditor) return;
 
     // We are driving Lexical from HTML right now; don't let Lexical echo back.
@@ -378,6 +378,7 @@ let suppressWysiwygToHtml = false;
     }, 0);
   },
 });
+
 
 
   //initWysiwygView({

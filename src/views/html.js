@@ -1,5 +1,7 @@
 // src/views/html.js
-export function initHtmlView({ elements, docState, applyHtmlToWysiwyg }) {
+import { cleanHTML } from '../import/htmlImport.js';
+
+export function initHtmlView({ elements, docState, loadHtmlIntoEditor }) {
   const { htmlEditor, btnFormatHtml } = elements;
   if (!htmlEditor) return;
 
@@ -93,14 +95,20 @@ export function initHtmlView({ elements, docState, applyHtmlToWysiwyg }) {
 
 
   btnFormatHtml?.addEventListener('click', () => {
-  // optional: pretty print first
-  const pretty = prettyHtml(htmlEditor.value);
+  // 1) Compile first: normalize Word escapes (\92), strip Word cruft, enforce contract-ish structure
+  const compiled = cleanHTML(htmlEditor.value || '');
+
+  // 2) Pretty print for readability
+  const pretty = prettyHtml(compiled);
+
+  // 3) Save canonical HTML back to state + textbox
   htmlEditor.value = pretty;
   docState.setCleanHtml(pretty, { from: 'html' });
 
-  // Apply once, intentionally
-  applyHtmlToWysiwyg?.(pretty);
+  // 4) Apply once, intentionally (no live import)
+  loadHtmlIntoEditor?.(pretty);
 });
+
 
 
   htmlEditor.addEventListener('input', () => {

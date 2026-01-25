@@ -6,19 +6,27 @@ import {
 } from 'lexical';
 import { $generateNodesFromDOM } from '@lexical/html';
 
-export function importHtmlToEditor(editor, html) {
+
+import { cleanHTML } from '../import/htmlImport.js'; // adjust path if yours differs
+import { sanitizeToContract } from '../import/sanitizeToContract.js';
+
+export function importHtmlToEditor(editor, html, { onWarnings } = {}) {
+  // 1) Word-style normalization belt (even if already “clean”)
+  const normalized = cleanHTML(html || '');
+
+  // 2) Contract enforcement suspenders
+  const { html: safeHtml, warnings } = sanitizeToContract(normalized);
+  if (warnings.length) onWarnings?.(warnings);
+
   editor.update(() => {
     const root = $getRoot();
     root.clear();
 
-    // Parse whatever the user typed (even if it's mid-edit / malformed)
     const parser = new DOMParser();
-    const doc = parser.parseFromString(html || '', 'text/html');
+    const doc = parser.parseFromString(safeHtml || '', 'text/html');
 
     const nodes = $generateNodesFromDOM(editor, doc);
 
-    // Root can only contain Element or Decorator nodes.
-    // If we get TextNodes (common while typing), wrap them in a paragraph.
     const rootChildren = [];
     let textWrapper = null;
 
@@ -26,14 +34,12 @@ export function importHtmlToEditor(editor, html) {
       const okAtRoot = $isElementNode(n) || $isDecoratorNode(n);
 
       if (okAtRoot) {
-        // flush any pending wrapper first
         if (textWrapper && textWrapper.getChildrenSize() > 0) {
           rootChildren.push(textWrapper);
         }
         textWrapper = null;
         rootChildren.push(n);
       } else {
-        // wrap any non-root-safe nodes (TextNode, LineBreakNode, etc.)
         if (!textWrapper) textWrapper = $createParagraphNode();
         textWrapper.append(n);
       }
@@ -43,10 +49,6 @@ export function importHtmlToEditor(editor, html) {
       rootChildren.push(textWrapper);
     }
 
-    if (rootChildren.length > 0) {
-      root.append(...rootChildren);
-    } else {
-      root.append($createParagraphNode());
-    }
+    root.append(...(rootChildren.length ? rootChildren : [$createParagraphNode()]));
   });
 }
