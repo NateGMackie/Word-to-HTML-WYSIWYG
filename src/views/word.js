@@ -1,5 +1,5 @@
 // src/views/word.js
-import { cleanHTML } from "../services/convert.js";
+import { cleanHTML } from "../import/htmlImport.js";
 
 export function initWordView({
   elements,
@@ -23,7 +23,7 @@ export function initWordView({
     const cleaned = cleanHTML(rawWordHtml);
 
     docState.setCleanHtml(cleaned, { from: "system" });
-    setActiveView("wysiwyg");
+    setActiveView("html");
   });
 
   // Reset everything

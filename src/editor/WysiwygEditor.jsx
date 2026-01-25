@@ -18,6 +18,8 @@ import BlockFormatBridgePlugin from './BlockFormatBridgePlugin.jsx';
 import CalloutBridgePlugin from './CalloutBridgePlugin.jsx';
 import InlineFormatBridgePlugin from './InlineFormatBridgePlugin.jsx';
 import { KeyboardPlugin } from '../plugins/KeyboardPlugin.js';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+
 
 function Placeholder() {
   return (
@@ -27,9 +29,17 @@ function Placeholder() {
   );
 }
 
+function EditorReadyPlugin({ onEditorReady }) {
+  const [editor] = useLexicalComposerContext();
 
+  React.useEffect(() => {
+    onEditorReady?.(editor);
+  }, [editor, onEditorReady]);
 
-export default function WysiwygEditor({ onHtmlChange }) {
+  return null;
+}
+
+export default function WysiwygEditor({ onHtmlChange, onEditorReady }) {
   const initialConfig = {
     ...editorConfig,
     editorState: null,
@@ -44,6 +54,7 @@ export default function WysiwygEditor({ onHtmlChange }) {
           }
           placeholder={<Placeholder />}
         />
+    <EditorReadyPlugin onEditorReady={onEditorReady} />
 
         {/* Make sure the editor never has an empty root:
             this creates an initial <p> and selects it on load */}

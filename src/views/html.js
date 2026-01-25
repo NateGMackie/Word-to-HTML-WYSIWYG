@@ -1,5 +1,7 @@
 // src/views/html.js
-export function initHtmlView({ elements, docState }) {
+import { cleanHTML } from '../import/htmlImport.js';
+
+export function initHtmlView({ elements, docState, loadHtmlIntoEditor }) {
   const { htmlEditor, btnFormatHtml } = elements;
   if (!htmlEditor) return;
 
@@ -93,12 +95,26 @@ export function initHtmlView({ elements, docState }) {
 
 
   btnFormatHtml?.addEventListener('click', () => {
-    const pretty = prettyHtml(htmlEditor.value);
-    htmlEditor.value = pretty;
-    docState.setCleanHtml(pretty, { from: 'html' });
-  });
+  // 1) Compile first: normalize Word escapes (\92), strip Word cruft, enforce contract-ish structure
+  const compiled = cleanHTML(htmlEditor.value || '');
+
+  // 2) Pretty print for readability
+  const pretty = prettyHtml(compiled);
+
+  // 3) Save canonical HTML back to state + textbox
+  htmlEditor.value = pretty;
+  docState.setCleanHtml(pretty, { from: 'html' });
+
+  // 4) Apply once, intentionally (no live import)
+  loadHtmlIntoEditor?.(pretty);
+});
+
+
 
   htmlEditor.addEventListener('input', () => {
-    docState.setCleanHtml(htmlEditor.value, { from: 'html' });
-  });
+  const html = htmlEditor.value;
+  docState.setCleanHtml(html, { from: 'html' });
+  // no live import
+});
+
 }

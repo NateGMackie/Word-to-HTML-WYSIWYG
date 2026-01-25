@@ -100,10 +100,37 @@ export class CalloutNode extends ElementNode {
     return false;
   }
 
-  // For now we only care about export; importDOM can come later.
   static importDOM() {
-    return null;
-  }
+  return {
+    div: (domNode) => {
+      if (!(domNode instanceof HTMLElement)) return null;
+
+      // Must be our canonical wrapper
+      if (!domNode.classList.contains('callout')) return null;
+
+      return {
+        conversion: (node) => {
+          const el = node; // HTMLElement
+          const kind =
+            el.classList.contains('note')
+              ? 'note'
+              : el.classList.contains('warning')
+              ? 'warning'
+              : el.classList.contains('example')
+              ? 'example'
+              : 'note';
+
+          // IMPORTANT: use your actual factory/create method name here
+          const calloutNode = $createCalloutNode(kind);
+
+          return { node: calloutNode };
+        },
+        priority: 2,
+      };
+    },
+  };
+}
+
 
   exportDOM(editor) {
     const element = document.createElement('div');

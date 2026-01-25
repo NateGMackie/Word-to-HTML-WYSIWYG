@@ -1,0 +1,569 @@
+{
+  "paragraph_count": 38,
+  "table_count": 1,
+  "styles": [
+    "Example Block",
+    "Heading 1",
+    "Heading 2",
+    "Heading 3",
+    "List Paragraph",
+    "Normal",
+    "Note Block",
+    "Warn Block"
+  ],
+  "paragraphs": [
+    {
+      "style": "Heading 1",
+      "text": "This is the title of the document (h1)",
+      "runs": [
+        {
+          "text": "This is the title of the document (h1)",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "The title sets the stage",
+      "runs": [
+        {
+          "text": "The title sets the stage",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Heading 2",
+      "text": "This is the first section (h2)",
+      "runs": [
+        {
+          "text": "This is the first section (h2)",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "The first section adds scenery to the stage.",
+      "runs": [
+        {
+          "text": "The first section adds scenery to the stage.",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Heading 2",
+      "text": "This is the second section (h2)",
+      "runs": [
+        {
+          "text": "This is the second section (h2)",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "The second section brings more light to an area of the stage.",
+      "runs": [
+        {
+          "text": "The second section brings more light to an area of the stage.",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "This is a subsection (h3)",
+      "runs": [
+        {
+          "text": "This is a subsection (h3)",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "Here are some formatting tests:",
+      "runs": [
+        {
+          "text": "Here are some formatting tests:",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "Here are some basic formats",
+      "runs": [
+        {
+          "text": "Here are some basic formats",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This text is bold",
+      "runs": [
+        {
+          "text": "This ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "text",
+          "bold": true,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " is bold",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This text is italics",
+      "runs": [
+        {
+          "text": "This ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "text",
+          "bold": null,
+          "italic": true,
+          "underline": null
+        },
+        {
+          "text": " is italics",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This text is underlined",
+      "runs": [
+        {
+          "text": "This ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "text ",
+          "bold": null,
+          "italic": null,
+          "underline": true
+        },
+        {
+          "text": "is underlined",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This text has a strikethrough",
+      "runs": [
+        {
+          "text": "This ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "text",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " has a strikethrough",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This text is superscript and this text is subscript",
+      "runs": [
+        {
+          "text": "This ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "text",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " is superscript and this ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "text",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " is subscript",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This is user input text",
+      "runs": [
+        {
+          "text": "This is ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "user input",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " text",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This is a variable text",
+      "runs": [
+        {
+          "text": "This is a ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "variable",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " text",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This is a test for links",
+      "runs": [
+        {
+          "text": "This is a test for links",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This text is a link to a blank page",
+      "runs": [
+        {
+          "text": "This ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "text",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " is a link to a blank page",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This goes to the Open AI website",
+      "runs": [
+        {
+          "text": "This goes to the ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " website",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This link goes to a bookmark in this document",
+      "runs": [
+        {
+          "text": "This link goes to a ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " in this document",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Heading 3",
+      "text": "This is another subsection (h3)",
+      "runs": [
+        {
+          "text": "This is another subsection (h3)",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "Table: This table organizes content:",
+      "runs": [
+        {
+          "text": "Table:",
+          "bold": true,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": " This table organizes content:",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "runs": []
+    },
+    {
+      "style": "Heading 3",
+      "text": "This is the final subsection (h3)",
+      "runs": [
+        {
+          "text": "This is the final subsection (h3)",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "This unordered list has three tiers:",
+      "runs": [
+        {
+          "text": "This unordered list has three tiers:",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This is the first item",
+      "runs": [
+        {
+          "text": "This is the first item",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This is the first item\u2019s second tier",
+      "runs": [
+        {
+          "text": "This is the first item\u2019s second tier",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This is the third tier of the first item\u2019s second tier",
+      "runs": [
+        {
+          "text": "This ",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        },
+        {
+          "text": "is the third tier of the first item\u2019s second tier",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This is another third tier",
+      "runs": [
+        {
+          "text": "This is another third tier",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This is the first item\u2019s second, second tier",
+      "runs": [
+        {
+          "text": "This is the first item\u2019s second, second tier",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "List Paragraph",
+      "text": "This is the second item",
+      "runs": [
+        {
+          "text": "This is the second item",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "runs": []
+    },
+    {
+      "style": "Note Block",
+      "text": "This is a note block",
+      "runs": [
+        {
+          "text": "This is a note block",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "runs": []
+    },
+    {
+      "style": "Warn Block",
+      "text": "This is a warning block",
+      "runs": [
+        {
+          "text": "This is a warning block",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "runs": []
+    },
+    {
+      "style": "Example Block",
+      "text": "This is an example block",
+      "runs": [
+        {
+          "text": "This is an example block",
+          "bold": null,
+          "italic": null,
+          "underline": null
+        }
+      ]
+    },
+    {
+      "style": "Normal",
+      "text": "",
+      "runs": []
+    }
+  ]
+}

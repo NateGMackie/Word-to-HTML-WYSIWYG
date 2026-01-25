@@ -7,7 +7,7 @@ import WysiwygEditor from './WysiwygEditor.jsx';
  * Mounts the Lexical-backed editor into #wysiwygRoot.
  * onHtmlChange is a callback you can use to keep the HTML view + docState in sync.
  */
-export function mountWysiwygEditor({ onHtmlChange } = {}) {
+export function mountWysiwygEditor({ onHtmlChange, onEditorReady } = {}) {
   const container = document.getElementById('wysiwygRoot');
   if (!container) {
     console.warn('mountWysiwygEditor: #wysiwygRoot not found in DOM');
@@ -16,10 +16,10 @@ export function mountWysiwygEditor({ onHtmlChange } = {}) {
 
   const root = createRoot(container);
 
-  // No JSX here – pure React.createElement
-  root.render(
+    root.render(
     React.createElement(WysiwygEditor, {
       onHtmlChange: onHtmlChange || (() => {}),
+      onEditorReady: onEditorReady || (() => {}),
     }),
   );
 }
