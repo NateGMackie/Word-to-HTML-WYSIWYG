@@ -94,20 +94,71 @@ export function initHtmlView({ elements, docState, loadHtmlIntoEditor }) {
 }
 
 
-  btnFormatHtml?.addEventListener('click', () => {
-  // 1) Compile first: normalize Word escapes (\92), strip Word cruft, enforce contract-ish structure
-  const compiled = cleanHTML(htmlEditor.value || '');
+  // Create (or reuse) a small status line right under the Update button
+function getStatusEl() {
+  let el = document.getElementById('htmlApplyStatus');
+  if (el) return el;
 
-  // 2) Pretty print for readability
-  const pretty = prettyHtml(compiled);
+  el = document.createElement('div');
+  el.id = 'htmlApplyStatus';
+  el.setAttribute('role', 'status');
+  el.style.marginTop = '8px';
+  el.style.fontSize = '12px';
+  el.style.opacity = '0.9';
 
-  // 3) Save canonical HTML back to state + textbox
-  htmlEditor.value = pretty;
-  docState.setCleanHtml(pretty, { from: 'html' });
+  // Insert after the button if possible; otherwise append after the editor.
+  if (btnFormatHtml?.parentElement) {
+    btnFormatHtml.parentElement.appendChild(el);
+  } else {
+    htmlEditor?.insertAdjacentElement('afterend', el);
+  }
+  return el;
+}
 
-  // 4) Apply once, intentionally (no live import)
-  loadHtmlIntoEditor?.(pretty);
+function setStatus(message, kind = 'info') {
+  const el = getStatusEl();
+  el.textContent = message;
+
+  // minimal styling without requiring CSS changes
+  if (kind === 'error') {
+    el.style.color = 'crimson';
+  } else if (kind === 'warn') {
+    el.style.color = 'darkgoldenrod';
+  } else {
+    el.style.color = '';
+  }
+}
+
+btnFormatHtml?.addEventListener('click', () => {
+  const input = (htmlEditor.value || '').trim();
+
+  try {
+    // 1) Compile: sanitize/normalize + enforce contract-ish structure
+    const compiled = cleanHTML(input);
+
+    // 2) Pretty print for readability (prettyHtml already has its own try/catch)
+    const pretty = prettyHtml(compiled);
+
+    // 3) Save canonical HTML back to state + textbox
+    htmlEditor.value = pretty;
+    docState.setCleanHtml(pretty, { from: 'html' });
+
+    // 4) Apply once, intentionally (no live import)
+    loadHtmlIntoEditor?.(pretty);
+
+    // Status / validation messaging
+    if (input && compiled.trim() !== input) {
+      setStatus('Applied with changes (unsupported HTML was removed/normalized to match the contract).', 'warn');
+    } else {
+      setStatus('Applied.', 'info');
+    }
+  } catch (err) {
+    console.error('HTML Apply failed:', err);
+    setStatus(`Could not apply HTML. Fix the markup and try again. (${err?.message || 'Unknown error'})`, 'error');
+    // Do NOT throw — this is how we meet “Invalid HTML does not crash editor”
+  }
 });
+
 
 
 

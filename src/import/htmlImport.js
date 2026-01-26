@@ -3,9 +3,41 @@
 
 // --- Parse into a separate DOM document ---
 function parseHTML(input) {
-  const parser = new DOMParser();
-  return parser.parseFromString(input, "text/html");
+  const html = String(input ?? "");
+
+  // Prefer DOMParser when it yields a real HTML document
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    if (doc && doc.body) return doc;
+  } catch {
+    // fall through
+  }
+
+  // Fallback: <template> always works and gives us a Document via ownerDocument
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html;
+
+  // Create a clean HTMLDocument and populate its body
+  const doc = document.implementation.createHTMLDocument("");
+  doc.body.append(...tpl.content.cloneNode(true).childNodes);
+
+  return doc;
 }
+
+
+const ALLOWED_TAGS = new Set([
+  'p','br','hr',
+  'strong','em','u','s','sub','sup','span','code',
+  'a','img',
+  'h1','h2','h3','h4','h5','h6',
+  'ul','ol','li',
+  'table','thead','tbody','tr','th','td',
+  'div', // restricted to callouts by sanitizeTree
+]);
+
+
+
 
 function removeHtmlComments(doc) {
   const walker = document.createTreeWalker(doc, NodeFilter.SHOW_COMMENT);
@@ -1517,9 +1549,59 @@ function normalizeWordOnlinePasteCallouts(doc) {
   });
 }
 
+function unwrap(el) {
+  const parent = el.parentNode;
+  while (el.firstChild) parent.insertBefore(el.firstChild, el);
+  parent.removeChild(el);
+}
+
+function remove(el) {
+  el.parentNode?.removeChild(el);
+}
+
+function sanitizeTree(root, report) {
+  if (!root) return;
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
+  const toProcess = [];
+
+  // ✅ Start at the first element *inside* root (skip root itself)
+  let node = walker.nextNode();
+  while (node) {
+    toProcess.push(node);
+    node = walker.nextNode();
+  }
+
+  toProcess.reverse().forEach((el) => {
+    const tag = el.tagName.toLowerCase();
+
+    if (!ALLOWED_TAGS.has(tag)) {
+      report.removedTags.add(tag);
+      unwrap(el);
+      return;
+    }
+
+    if (tag === "div") {
+      const className = (el.getAttribute("class") || "").trim();
+      const isAllowedDiv =
+        className.startsWith("callout ") || className === "callout" || className.includes("callout");
+
+      if (!isAllowedDiv) {
+        report.normalized.push("div->p");
+        const p = document.createElement("p");
+        while (el.firstChild) p.appendChild(el.firstChild);
+        el.replaceWith(p);
+      }
+    }
+  });
+}
+
+
 function serialize(doc) {
+  if (!doc || !doc.body) return "";
   return doc.body.innerHTML.trim();
 }
+
 
 // ===== Public API =====
 // Order matters – this is your tuned pipeline from the prototype.
@@ -1570,6 +1652,14 @@ export function cleanHTML(inputHTML) {
   normalizeTables(doc);              // unwrap tbody/thead/tfoot; drop colgroup/col
   stripTableBorders(doc);
   unwrapParasInListItems(doc);        // <li><p>foo</p></li> → <li>foo</li>
+
+// 6) Contract enforcement (allow-list)
+  // IMPORTANT: sanitize the same DOM we've been normalizing all along.
+  const report = { removedTags: new Set(), normalized: [] };
+  sanitizeTree(doc.body, report);
+
+  // (Optional for later) expose report if you want UI messaging to be precise:
+  // doc.__sanitizeReport = report;
 
   return serialize(doc);
 }

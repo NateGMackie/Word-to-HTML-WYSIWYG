@@ -366,17 +366,23 @@ let suppressWysiwygToHtml = false;
   elements: sharedElements,
   docState,
   loadHtmlIntoEditor: (html) => {
-    if (!lexicalEditor) return;
+  if (!lexicalEditor) return;
 
-    // We are driving Lexical from HTML right now; don't let Lexical echo back.
-    suppressWysiwygToHtml = true;
+  suppressWysiwygToHtml = true;
+
+  try {
     importHtmlToEditor(lexicalEditor, html);
-
-    // Release suppression on the next tick after Lexical processes the update.
+  } catch (err) {
+    // IMPORTANT: rethrow so the HTML view (Apply handler) can show the error message
+    throw err;
+  } finally {
+    // Always release suppression, even if import throws
     setTimeout(() => {
       suppressWysiwygToHtml = false;
     }, 0);
-  },
+  }
+},
+
 });
 
 
