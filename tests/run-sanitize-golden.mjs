@@ -366,10 +366,17 @@ const expected = normalizeEol(fs.readFileSync(outPath, "utf-8")).trim();
 const decodedInput =
   mode === "word" ? decodeQuotedPrintable(input) : input;
 
-raw =
+const result =
   mode === "word"
     ? cleanHTML(decodedInput)
     : cleanAndNormalizeExportHtml(decodedInput);
+
+// Back-compat: cleanHTML used to return a string; Stage 5 returns { html, report }
+raw =
+  typeof result === "string"
+    ? result
+    : (result && typeof result.html === "string" ? result.html : "");
+
   } catch (e) {
     failed++;
     console.error(`\n❌ Pipeline threw for:\n  ${relIn}\n  mode=${mode}\n  ${String(e?.stack || e)}`);
