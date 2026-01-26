@@ -6,6 +6,7 @@ import {
   $isRangeSelection,
   $isRootOrShadowRoot,
   $createParagraphNode,
+  $createTextNode,
   $isElementNode,
   $isTextNode,
   $getRoot,
@@ -15,7 +16,6 @@ import {
 import {
   $createCalloutNode,
   $isCalloutNode,
-  $initializeCalloutLabel,
 } from '../nodes/CalloutNode.js';
 
 
@@ -161,14 +161,31 @@ if (calloutNode) {
     // Switch kind
     calloutNode.setKind(kindKey);
 
-    if (kindKey === 'note' || kindKey === 'example') {
-      const wasEmpty = calloutNode.getFirstChild() == null;
-      const spaceNode = $initializeCalloutLabel(calloutNode);
-      // Only move the caret if we just created a blank labeled callout
-      if (wasEmpty && spaceNode) {
-        spaceNode.select(1, 1);
-      }
-    }
+let paragraph = calloutNode.getFirstChild();
+
+if (!paragraph || !$isParagraphNode(paragraph)) {
+  paragraph = $createParagraphNode();
+  calloutNode.append(paragraph);
+}
+
+if (paragraph.getTextContent() === '') {
+  paragraph.append($createTextNode('\u00A0')); // &nbsp;
+}
+
+paragraph.select();
+
+
+if (!paragraph || !$isParagraphNode(paragraph)) {
+  paragraph = $createParagraphNode();
+  callout.append(paragraph);
+}
+
+if (paragraph.getTextContent() === '') {
+  paragraph.append($createTextNode('\u00A0')); // &nbsp;
+}
+
+paragraph.select();
+
   }
   return;
 }
@@ -213,17 +230,19 @@ if (calloutNode) {
               // Insert the callout after the current block inside the list-item
               innerBlock.insertAfter(callout);
 
-              if (kindKey === 'note' || kindKey === 'example') {
-                const wasEmpty = callout.getFirstChild() == null;
-                const spaceNode = $initializeCalloutLabel(callout);
-                if (wasEmpty && spaceNode) {
-                  spaceNode.select(1, 1);
-                }
-              } else {
-                const paragraph = $createParagraphNode();
-                callout.append(paragraph);
-                paragraph.select();
-              }
+              let paragraph = callout.getFirstChild();
+
+if (!paragraph || !$isParagraphNode(paragraph)) {
+  paragraph = $createParagraphNode();
+  callout.append(paragraph);
+}
+
+if (paragraph.getTextContent() === '') {
+  paragraph.append($createTextNode('\u00A0')); // &nbsp;
+}
+
+/* paragraph.select();  leaving caret after callout for better UX */
+
 
               return;
             }
@@ -261,14 +280,19 @@ if (calloutNode) {
                 current = next;
               }
 
-              if (kindKey === 'note' || kindKey === 'example') {
-                const wasEmpty = callout.getFirstChild() == null;
-                const spaceNode = $initializeCalloutLabel(callout);
-                // In this multi-block case, callout won't be empty, so we won't move the caret.
-                if (wasEmpty && spaceNode) {
-                  spaceNode.select(1, 1);
-                }
-              }
+              let paragraph = callout.getFirstChild();
+
+if (!paragraph || !$isParagraphNode(paragraph)) {
+  paragraph = $createParagraphNode();
+  callout.append(paragraph);
+}
+
+if (paragraph.getTextContent() === '') {
+  paragraph.append($createTextNode('\u00A0')); // &nbsp;
+}
+
+paragraph.select();
+
 
               return;
             }
@@ -287,17 +311,18 @@ if (calloutNode) {
         if ($isRootOrShadowRoot(rootLike)) {
           rootLike.append(callout);
 
-          if (kindKey === 'note' || kindKey === 'example') {
-            const wasEmpty = callout.getFirstChild() == null;
-            const spaceNode = $initializeCalloutLabel(callout);
-            if (wasEmpty && spaceNode) {
-              spaceNode.select(1, 1); // caret after label for a blank callout
-            }
-          } else {
-            const paragraph = $createParagraphNode();
-            callout.append(paragraph);
-            paragraph.select();
-          }
+          let paragraph = callout.getFirstChild();
+
+if (!paragraph || !$isParagraphNode(paragraph)) {
+  paragraph = $createParagraphNode();
+  callout.append(paragraph);
+}
+
+if (paragraph.getTextContent() === '') {
+  paragraph.append($createTextNode('\u00A0')); // &nbsp;
+}
+
+paragraph.select();
 
           return;
         }
@@ -307,14 +332,19 @@ if (calloutNode) {
         block.insertBefore(callout);
         callout.append(block);
 
-        if (kindKey === 'note' || kindKey === 'example') {
-          const wasEmpty = callout.getFirstChild() == null;
-          const spaceNode = $initializeCalloutLabel(callout);
-          // Here we're wrapping existing content → callout has children → wasEmpty is false → caret stays put.
-          if (wasEmpty && spaceNode) {
-            spaceNode.select(1, 1);
-          }
-        }
+        let paragraph = callout.getFirstChild();
+
+if (!paragraph || !$isParagraphNode(paragraph)) {
+  paragraph = $createParagraphNode();
+  callout.append(paragraph);
+}
+
+if (paragraph.getTextContent() === '') {
+  paragraph.append($createTextNode('\u00A0')); // &nbsp;
+}
+
+paragraph.select();
+
       });
 
       editor.focus();
