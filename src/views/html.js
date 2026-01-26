@@ -134,10 +134,10 @@ btnFormatHtml?.addEventListener('click', () => {
 
   try {
     // 1) Compile: sanitize/normalize + enforce contract-ish structure
-    const compiled = cleanHTML(input);
+    const { html, report } = cleanHTML(input);
 
     // 2) Pretty print for readability (prettyHtml already has its own try/catch)
-    const pretty = prettyHtml(compiled);
+    const pretty = prettyHtml(html);
 
     // 3) Save canonical HTML back to state + textbox
     htmlEditor.value = pretty;
@@ -146,12 +146,19 @@ btnFormatHtml?.addEventListener('click', () => {
     // 4) Apply once, intentionally (no live import)
     loadHtmlIntoEditor?.(pretty);
 
-    // Status / validation messaging
-    if (input && compiled.trim() !== input) {
-      setStatus('Applied with changes (unsupported HTML was removed/normalized to match the contract).', 'warn');
-    } else {
-      setStatus('Applied.', 'info');
-    }
+    // Status / validation messaging (Stage 5: violations flagged)
+const removed = report?.removedTags ? Array.from(report.removedTags) : [];
+const normalized = report?.normalized || [];
+
+if (removed.length || normalized.length) {
+  const bits = [];
+  if (removed.length) bits.push(`Removed tags: ${removed.join(', ')}`);
+  if (normalized.length) bits.push(`Normalized: ${normalized.join(', ')}`);
+  setStatus(`Applied with changes. ${bits.join(' • ')}`, 'warn');
+} else {
+  setStatus('Applied. No contract violations detected.', 'info');
+}
+
   } catch (err) {
     console.error('HTML Apply failed:', err);
     setStatus(`Could not apply HTML. Fix the markup and try again. (${err?.message || 'Unknown error'})`, 'error');

@@ -1661,7 +1661,11 @@ export function cleanHTML(inputHTML) {
   // (Optional for later) expose report if you want UI messaging to be precise:
   // doc.__sanitizeReport = report;
 
-  return serialize(doc);
+  return {
+  html: serialize(doc),
+  report,
+};
+
 }
 
 
