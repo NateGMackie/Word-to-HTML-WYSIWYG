@@ -1,54 +1,35 @@
-import {
-  $getRoot,
-  $createParagraphNode,
-  $isElementNode,
-  $isDecoratorNode,
-} from 'lexical';
+// src/editor/importHtmlToEditor.js
+import { $getRoot, $createParagraphNode } from 'lexical';
 import { $generateNodesFromDOM } from '@lexical/html';
 
+function coerceHtml(input) {
+  if (typeof input === 'string') return input;
+  if (input && typeof input === 'object') {
+    if (typeof input.html === 'string') return input.html;
+    if (typeof input.cleanHtml === 'string') return input.cleanHtml;
+    if (typeof input.cleanHTML === 'string') return input.cleanHTML;
+  }
+  if (input == null) return '';
+  return String(input);
+}
 
-import { cleanHTML } from '../import/htmlImport.js'; // adjust path if yours differs
-import { sanitizeToContract } from '../import/sanitizeToContract.js';
+export function importHtmlToEditor(editor, htmlLike) {
+  const html = coerceHtml(htmlLike).trim();
 
-export function importHtmlToEditor(editor, html, { onWarnings } = {}) {
-  // 1) Word-style normalization belt (even if already “clean”)
-  const normalized = cleanHTML(html || '');
-
-  // 2) Contract enforcement suspenders
-  const { html: safeHtml, warnings } = sanitizeToContract(normalized);
-  if (warnings.length) onWarnings?.(warnings);
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html || '<p></p>', 'text/html');
 
   editor.update(() => {
     const root = $getRoot();
     root.clear();
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(safeHtml || '', 'text/html');
-
     const nodes = $generateNodesFromDOM(editor, doc);
 
-    const rootChildren = [];
-    let textWrapper = null;
-
-    for (const n of nodes) {
-      const okAtRoot = $isElementNode(n) || $isDecoratorNode(n);
-
-      if (okAtRoot) {
-        if (textWrapper && textWrapper.getChildrenSize() > 0) {
-          rootChildren.push(textWrapper);
-        }
-        textWrapper = null;
-        rootChildren.push(n);
-      } else {
-        if (!textWrapper) textWrapper = $createParagraphNode();
-        textWrapper.append(n);
-      }
+    if (!nodes || nodes.length === 0) {
+      root.append($createParagraphNode());
+      return;
     }
 
-    if (textWrapper && textWrapper.getChildrenSize() > 0) {
-      rootChildren.push(textWrapper);
-    }
-
-    root.append(...(rootChildren.length ? rootChildren : [$createParagraphNode()]));
+    root.append(...nodes);
   });
 }

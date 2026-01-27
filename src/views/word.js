@@ -20,10 +20,11 @@ export function initWordView({
   // Clean: run Word → Clean HTML pipeline, then push into state and go to WYSIWYG
   btnClean?.addEventListener("click", () => {
     const rawWordHtml = wordInput.innerHTML;
-    const cleaned = cleanHTML(rawWordHtml);
+    const { html } = cleanHTML(rawWordHtml);
 
-    docState.setCleanHtml(cleaned, { from: "system" });
-    setActiveView("html");
+docState.setCleanHtml(html, { from: "system" });
+setActiveView("html");
+
   });
 
   // Reset everything

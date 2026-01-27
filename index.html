@@ -137,20 +137,35 @@
 
           <!-- Dropdown panel -->
           <div id="menuPanel"
-               class="hidden absolute right-0 mt-2 w-40 rounded-md menu-panel shadow-lg text-xs text-primary z-20">
-            <button id="menuNew"
-                    class="w-full text-left px-3 py-2 menu-item">
-              New
-            </button>
-            <button id="menuImport"
-                    class="w-full text-left px-3 py-2 menu-item">
-              Import
-            </button>
-            <button id="menuSave"
-                    class="w-full text-left px-3 py-2 menu-item">
-              Save
-            </button>
-          </div>
+     class="hidden absolute right-0 mt-2 w-44 rounded-md menu-panel shadow-lg text-xs text-primary z-20">
+  <button id="menuNew"
+          class="w-full text-left px-3 py-2 menu-item">
+    New
+  </button>
+
+  <button id="menuImport"
+          class="w-full text-left px-3 py-2 menu-item">
+    Import
+  </button>
+
+  <div class="my-1 h-px w-full bg-divider"></div>
+
+  <button id="menuOpenDraft"
+          class="w-full text-left px-3 py-2 menu-item">
+    Open draft…
+  </button>
+
+  <button id="menuSave"
+          class="w-full text-left px-3 py-2 menu-item">
+    Save draft
+  </button>
+
+  <button id="menuExportHtml"
+          class="w-full text-left px-3 py-2 menu-item">
+    Export HTML
+  </button>
+</div>
+
         </div>
       </div>
 
@@ -503,9 +518,7 @@ a:hover {
 /*-------------------------------------
   8. Callouts (Note, Warning, Example)
 -------------------------------------*/
-.note,
-.warning,
-.example-block {
+.callout {
     padding: 1em;
     margin: 1em 0;
     font-family: sans-serif;
@@ -513,17 +526,17 @@ a:hover {
     box-sizing: border-box;
 }
 
-.note {
+.callout.note {
     background-color: #f9f9f9;
     border-left: 4px solid #0073e6;
 }
 
-.warning {
+.callout.warning {
     background-color: #fff3cd;
     border-left: 4px solid #ff9800;
 }
 
-.example-block {
+.callout.example {
     background-color: #f0f0f0; /* Improved contrast */
     border-left: 4px solid #aaa; /* Clearer framing */
 }
