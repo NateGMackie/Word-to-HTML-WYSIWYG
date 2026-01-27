@@ -229,37 +229,84 @@ if (!cssForExport) {
   // ============================================================
   // 4) CLIPBOARD
   // ============================================================
-  async function copyActive() {
+    async function copyExportFragment() {
     try {
-      if (activeView === 'html') {
-        await navigator.clipboard.writeText(htmlEditor.value);
-        return;
-      }
+      const fragment = getExportFragmentHtml();
+      if (!ensureExportIsValidOrAlert(fragment)) return;
 
-      if (activeView === 'wysiwyg') {
-        const html = docState.getCleanHtml() || (wysiwyg?.innerHTML || '');
-        const data = [
-          new ClipboardItem({
-            'text/html': new Blob([html], { type: 'text/html' }),
-            'text/plain': new Blob([html.replace(/<[^>]+>/g, '')], { type: 'text/plain' }),
-          }),
-        ];
-        await navigator.clipboard.write(data);
-        return;
-      }
-
-      // Word view
-      await navigator.clipboard.writeText(wordInput.innerHTML);
+      const data = [
+        new ClipboardItem({
+          'text/html': new Blob([fragment], { type: 'text/html' }),
+'text/plain': new Blob([fragment], { type: 'text/plain' }),
+        }),
+      ];
+      await navigator.clipboard.write(data);
     } catch {
       // Clipboard blocked or unsupported — silently fail for now
     }
   }
 
+
   // ============================================================
   // 5) EXPORT + DRAFT SAVE/OPEN
   // ============================================================
-  function exportHtmlFile() {
-    const content = docState.getCleanHtml() || (wysiwyg?.innerHTML || '');
+    function getExportFragmentHtml() {
+    // Stage 7: export is always the canonical clean HTML fragment
+    return String(docState.getCleanHtml() || '').trim();
+  }
+
+  function validateExportFragmentAgainstContract(html) {
+    const source = String(html || '').trim();
+
+    // Basic “gate” (expand later as contract hardens)
+    if (!source) return { ok: false, message: 'Nothing to export yet.' };
+
+    // Block full-document exports from slipping into fragment export
+    const forbidden = [
+      '<!doctype',
+      '<html',
+      '<head',
+      '<body',
+      '<script',
+      '<style',
+    ];
+
+    const lower = source.toLowerCase();
+    const hit = forbidden.find((t) => lower.includes(t));
+    if (hit) {
+      return {
+        ok: false,
+        message: `Export must be an HTML fragment (no ${hit}...). Use Publish for a full standalone HTML page.`,
+      };
+    }
+
+    return { ok: true };
+  }
+
+  function ensureExportIsValidOrAlert(html) {
+    const result = validateExportFragmentAgainstContract(html);
+    if (!result.ok) {
+      alert(result.message || 'Export blocked: content does not match the contract.');
+      return false;
+    }
+    return true;
+  }
+  
+    function exportFragmentFile() {
+    const fragment = getExportFragmentHtml();
+    if (!ensureExportIsValidOrAlert(fragment)) return;
+
+    downloadBlob({
+      bytes: fragment,
+      mime: 'text/html;charset=utf-8',
+      filename: `${getDocBaseName()}-${makeTimestampSlug()}.html`,
+    });
+  }
+
+  function publishStandaloneHtmlFile() {
+    const content = getExportFragmentHtml(); // publish uses the same canonical fragment
+    if (!ensureExportIsValidOrAlert(content)) return;
+
     const doc = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${extractTitleFromHtml(content) || 'Document'}</title>
@@ -460,8 +507,8 @@ importHtmlToEditor(lexicalEditor, String(html ?? ''));
   navWysiwyg?.addEventListener('click', () => setActiveView('wysiwyg'));
 
   // Global buttons
-  btnCopy?.addEventListener('click', copyActive);
-  btnSave?.addEventListener('click', saveDraftFile);
+  btnCopy?.addEventListener('click', copyExportFragment);
+  btnSave?.addEventListener('click', exportFragmentFile);
 
   // Menu toggle
   btnMenu?.addEventListener('click', () => {
@@ -487,10 +534,11 @@ importHtmlToEditor(lexicalEditor, String(html ?? ''));
   });
 
   // Menu: Save draft (delegates to btnSave)
-  menuSave?.addEventListener('click', () => {
-    btnSave?.click();
+    menuSave?.addEventListener('click', () => {
+    saveDraftFile();
     menuPanel?.classList.add('hidden');
   });
+
 
   // Menu: Open draft
   menuOpenDraft?.addEventListener('click', () => {
@@ -498,11 +546,19 @@ importHtmlToEditor(lexicalEditor, String(html ?? ''));
     menuPanel?.classList.add('hidden');
   });
 
-  // Menu: Export HTML
-  menuExportHtml?.addEventListener('click', () => {
-    exportHtmlFile();
+  // Menu: Publish HTML
+    menuExportHtml?.addEventListener('click', () => {
+    publishStandaloneHtmlFile();
     menuPanel?.classList.add('hidden');
   });
+
+    // Keep export fragment in sync with HTML view edits
+  htmlEditor?.addEventListener('input', () => {
+    if (getActiveView() !== 'html') return;
+    docState.setCleanHtml(htmlEditor.value || '', { from: 'html' });
+  });
+
+
 
   // ============================================================
   // 8) INIT DEFAULT STATE
@@ -517,10 +573,10 @@ importHtmlToEditor(lexicalEditor, String(html ?? ''));
     onEditorReady: (editor) => {
       lexicalEditor = editor;
     },
-    onHtmlChange: (html) => {
-      if (suppressWysiwygToHtml) return;
-      if (getActiveView() !== 'wysiwyg') return;
-      docState.setCleanHtml(html, { from: 'wysiwyg' });
-    },
+    oonHtmlChange: (html) => {
+  if (suppressWysiwygToHtml) return;
+  docState.setCleanHtml(html, { from: 'wysiwyg' });
+},
+
   });
 });
