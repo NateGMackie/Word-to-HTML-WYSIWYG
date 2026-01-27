@@ -4,6 +4,8 @@ import { initWordView } from './views/word.js';
 import { initHtmlView } from './views/html.js';
 import { importHtmlToEditor } from './editor/importHtmlToEditor.js';
 import { mountWysiwygEditor } from './editor/mountWysiwyg.js';
+import { cleanHTML } from './import/htmlImport.js';
+
 
 const $ = (id) => document.getElementById(id);
 
@@ -464,10 +466,24 @@ if (!cssForExport) {
   };
 
   initWordView({
-    elements: sharedElements,
-    docState,
-    setActiveView,
-  });
+  elements: sharedElements,
+  docState,
+  setActiveView,
+  loadHtmlIntoEditor: (html) => {
+    if (!lexicalEditor) return;
+
+    suppressWysiwygToHtml = true;
+
+    try {
+      importHtmlToEditor(lexicalEditor, String(html ?? ''));
+    } finally {
+      setTimeout(() => {
+        suppressWysiwygToHtml = false;
+      }, 0);
+    }
+  },
+});
+
 
   initHtmlView({
     elements: sharedElements,
@@ -528,10 +544,60 @@ importHtmlToEditor(lexicalEditor, String(html ?? ''));
 
 
   // Menu: Import (switch to Word view)
-  menuImport?.addEventListener('click', () => {
-    navWord?.click();
+  menuImport?.addEventListener('click', async () => {
+  try {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.html,.htm,.drft';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      input.remove();
+      if (!file) return;
+
+      const name = (file.name || '').toLowerCase();
+
+      // Route .drft to existing draft loader if you want Import to handle drafts too
+      if (name.endsWith('.drft')) {
+        // Option A: reuse your existing picker flow (recommended if you already have a solid loader)
+        // openDraftFromFile(file);
+
+        // Option B: if you only have openDraftPicker(), keep Import as HTML-only for now:
+        alert('Use “Open draft” for .drft files (for now).');
+        return;
+      }
+
+      const text = await file.text();
+
+// 1) Scrub through contract first
+// NOTE: you need to import cleanHTML at top of main.js (see below)
+const { html } = cleanHTML(text);
+
+// 2) Store canonical clean HTML
+docState.setCleanHtml(html, { from: 'import' });
+if (htmlEditor) htmlEditor.value = html;
+
+// 3) Prep: load into editor
+if (lexicalEditor) {
+  suppressWysiwygToHtml = true;
+  try {
+    importHtmlToEditor(lexicalEditor, html);
+  } finally {
+    setTimeout(() => (suppressWysiwygToHtml = false), 0);
+  }
+}
+
+setActiveView('wysiwyg');
+
+    });
+
+    input.click();
+  } finally {
     menuPanel?.classList.add('hidden');
-  });
+  }
+});
 
   // Menu: Save draft (delegates to btnSave)
     menuSave?.addEventListener('click', () => {
@@ -573,9 +639,11 @@ importHtmlToEditor(lexicalEditor, String(html ?? ''));
     onEditorReady: (editor) => {
       lexicalEditor = editor;
     },
-    oonHtmlChange: (html) => {
+    onHtmlChange: (html) => {
   if (suppressWysiwygToHtml) return;
-  docState.setCleanHtml(html, { from: 'wysiwyg' });
+
+  const { html: cleaned } = cleanHTML(html);
+  docState.setCleanHtml(cleaned, { from: 'wysiwyg' });
 },
 
   });
