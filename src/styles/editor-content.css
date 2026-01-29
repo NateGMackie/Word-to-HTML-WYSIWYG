@@ -2,7 +2,7 @@
   Scope – ONLY affect WYSIWYG content
 -------------------------------------*/
 
-#wysiwygRoot {
+#wysiwygEditor {
   font-family: Arial, sans-serif;
   font-size: 14px;
   line-height: 1.6;
@@ -10,7 +10,7 @@
 }
 
 /* Ensure nested elements inherit correctly */
-#wysiwygRoot * {
+#wysiwygEditor * {
   box-sizing: border-box;
 }
 
@@ -19,14 +19,14 @@
   (ported from your doc CSS, but scoped + slightly tweaked for dark UI)
 -------------------------------------*/
 
-#wysiwygRoot h1 {
+#wysiwygEditor h1 {
   font-size: 22px !important;
   font-weight: bold;
   margin-bottom: 10px;
   color: #f9fafb;
 }
 
-#wysiwygRoot h2 {
+#wysiwygEditor h2 {
   font-size: 18px !important;
   font-weight: bold;
   margin-top: 40px;
@@ -34,7 +34,7 @@
   color: #e5e7eb;
 }
 
-#wysiwygRoot h3 {
+#wysiwygEditor h3 {
   font-size: 16px !important;
   font-weight: bold;
   margin-top: 18px;
@@ -46,107 +46,107 @@
   Paragraphs
 -------------------------------------*/
 
-#wysiwygRoot p {
+#wysiwygEditor p {
   margin-bottom: 12px;
 }
 
 /*-------------------------------------
  Lists (same structure as your ServiceNow-friendly CSS) 
  -------------------------------------*/ 
- /* #wysiwygRoot ul, 
- #wysiwygRoot ol { 
+ /* #wysiwygEditor ul, 
+ #wysiwygEditor ol { 
  margin-left: 20px; 
  padding-left: 0; 
  list-style-position: 
  inside; /* Required by ServiceNow } 
  
- #wysiwygRoot ul li, 
- #wysiwygRoot ol li { 
+ #wysiwygEditor ul li, 
+ #wysiwygEditor ol li { 
  margin-bottom: 6px; 
  position: relative; 
  padding-left: 20px; 
  text-indent: -20px; /* Creates hanging indent } */ 
  
- /* #wysiwygRoot ul li::marker, 
- #wysiwygRoot ol li::marker { 
+ /* #wysiwygEditor ul li::marker, 
+ #wysiwygEditor ol li::marker { 
  font-weight: bold; } */ 
  
  /* Fix line breaks in list items */ 
- /* #wysiwygRoot ul li br, 
- #wysiwygRoot ol li br { 
+ /* #wysiwygEditor ul li br, 
+ #wysiwygEditor ol li br { 
  display: block; content: ""; 
  margin-left: 20px; } */ 
  
 /* Bullet styles by nesting depth*/
 
 /* Level 1 */
-#wysiwygRoot .w2h-editor ul {
+#wysiwygEditor .w2h-editor ul {
   list-style-type: disc;
 }
 
 /* Level 2 */
-#wysiwygRoot .w2h-editor ul ul {
+#wysiwygEditor .w2h-editor ul ul {
   list-style-type: square;
 }
 
 /* Level 3 */
-#wysiwygRoot .w2h-editor ul ul ul {
+#wysiwygEditor .w2h-editor ul ul ul {
   list-style-type: circle;
 }
 
 /* Number styles by nesting depth */
 
 /* Level 1 */
-#wysiwygRoot .w2h-editor ol {
+#wysiwygEditor .w2h-editor ol {
   list-style-type: decimal;
 }
 
 /* Level 2 */
-#wysiwygRoot .w2h-editor ol ol {
+#wysiwygEditor .w2h-editor ol ol {
   list-style-type: lower-alpha;   /* a, b, c */
 }
 
 /* Level 3 */
-#wysiwygRoot .w2h-editor ol ol ol {
+#wysiwygEditor .w2h-editor ol ol ol {
   list-style-type: lower-roman;   /* i, ii, iii */
 }
 
 /* Make sure markers are visible and match the text color */ 
-/* #wysiwygRoot ul li::marker, 
-#wysiwygRoot ol li::marker { 
+/* #wysiwygEditor ul li::marker, 
+#wysiwygEditor ol li::marker { 
 color: inherit; 
 font-weight: bold; 
 } */ 
  
 /* Editor-friendly lists inside the Lexical editor */ 
-#wysiwygRoot .w2h-editor ul, 
-#wysiwygRoot .w2h-editor ol { 
+#wysiwygEditor .w2h-editor ul, 
+#wysiwygEditor .w2h-editor ol { 
   margin-left: 1.0rem; 
   padding-left: 0; 
   list-style-position: outside; /* better caret behavior */ 
 } 
 
-#wysiwygRoot .w2h-editor li { 
+#wysiwygEditor .w2h-editor li { 
   margin-bottom: 0.375rem; 
   padding-left: 0; 
   text-indent: 0; /* no hanging indent in-editor */ 
 } 
 /* Keep bullets/numbers visible and styled */ 
-#wysiwygRoot .w2h-editor ul li::marker, 
-#wysiwygRoot .w2h-editor ol li::marker { 
+#wysiwygEditor .w2h-editor ul li::marker, 
+#wysiwygEditor .w2h-editor ol li::marker { 
   font-weight: bold; color: inherit; 
 }
 
 /* Hide the outer marker when a list item only exists to wrap a nested list
    This prevents "2.  1. Sub item" on the same line. */
-#wysiwygRoot .w2h-editor li:has(> ol),
-#wysiwygRoot .w2h-editor li:has(> ul) {
+#wysiwygEditor .w2h-editor li:has(> ol),
+#wysiwygEditor .w2h-editor li:has(> ul) {
   list-style-type: none;
 }
 
 /* Optional: add a small visual gap before nested lists */
-#wysiwygRoot .w2h-editor li > ol,
-#wysiwygRoot .w2h-editor li > ul {
+#wysiwygEditor .w2h-editor li > ol,
+#wysiwygEditor .w2h-editor li > ul {
   margin-top: 0.25rem;
 }
 
@@ -154,21 +154,21 @@ font-weight: bold;
   Tables
 -------------------------------------*/
 
-#wysiwygRoot table {
+#wysiwygEditor table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
 }
 
-#wysiwygRoot th,
-#wysiwygRoot thead,
-#wysiwygRoot td {
+#wysiwygEditor th,
+#wysiwygEditor thead,
+#wysiwygEditor td {
   border: 1px solid #4b5563;
   padding: 8px;
 }
 
-#wysiwygRoot th,
-#wysiwygRoot thead {
+#wysiwygEditor th,
+#wysiwygEditor thead {
   background-color: #111827;
   font-weight: bold;
 }
@@ -184,12 +184,12 @@ font-weight: bold;
   Links
 -------------------------------------*/
 
-#wysiwygRoot a {
+#wysiwygEditor a {
   color: #60a5fa;
   text-decoration: none;
 }
 
-#wysiwygRoot a:hover {
+#wysiwygEditor a:hover {
   text-decoration: underline;
 }
 
@@ -198,8 +198,8 @@ font-weight: bold;
   (same semantics, colors nudged for dark background)
 -------------------------------------*/
 
-#wysiwygRoot .callout, 
-#wysiwygRoot blockquote{
+#wysiwygEditor .callout, 
+#wysiwygEditor blockquote{
   padding: 1em;
   margin: 12px 0;
   white-space: normal;
@@ -207,40 +207,40 @@ font-weight: bold;
   border-radius: 4px;
 }
 
-#wysiwygRoot .callout.note, .callout.example {
+#wysiwygEditor .callout.note, .callout.example {
   background-color: #0f172a;
   border-left: 4px solid #3b82f6;
 }
 
-#wysiwygRoot .callout.warning {
+#wysiwygEditor .callout.warning {
   background-color: #43302b;
   border-left: 4px solid #f97316;
 }
 
 /* Adjust spacing/indentation inside lists */
-#wysiwygRoot li .callout, #wysiwygRoot li blockquote {
+#wysiwygEditor li .callout, #wysiwygEditor li blockquote {
   text-indent: 0;
   padding-left: 1em;
   margin-left: 0;
   display: block;
 }
 
-#wysiwygRoot li > .note,
-#wysiwygRoot li > .warning,
-#wysiwygRoot li > .example,
-#wysiwygRoot li > blockquote {
+#wysiwygEditor li > .note,
+#wysiwygEditor li > .warning,
+#wysiwygEditor li > .example,
+#wysiwygEditor li > blockquote {
   margin-top: 0.5em;
 }
 
 /* blockquote style callout */
 
-#wysiwygRoot blockquote {
+#wysiwygEditor blockquote {
   background-color: transparent !important;   /* no background */
   border-left: 4px solid #3b82f6; 
 }
 
 /* Optional: tweak blockquote’s inner <p> spacing */
-#wysiwygRoot blockquote p {
+#wysiwygEditor blockquote p {
   margin: 0.4em 0;
 }
 
@@ -250,8 +250,8 @@ font-weight: bold;
   - HTML view: <pre>
 -------------------------------------*/
 
-#wysiwygRoot pre,
-#wysiwygRoot .w2h-editor code[spellcheck="false"] {
+#wysiwygEditor pre,
+#wysiwygEditor .w2h-editor code[spellcheck="false"] {
   display: block;
   background: #111827;
   border-left: 4px solid #9ca3af;   /* gray variant of callout border */
@@ -268,7 +268,7 @@ font-weight: bold;
   User Input Formatting
 -------------------------------------*/
 
-#wysiwygRoot .user-input {
+#wysiwygEditor .user-input {
   font-family: Consolas, monospace;
   background-color: #374151;
   padding: 2px 4px;
@@ -277,13 +277,13 @@ font-weight: bold;
 }
 
 /* Base variable styling (even if not nested) */
-#wysiwygRoot .variable {
+#wysiwygEditor .variable {
   font-style: italic;
   color: #e5e7eb;
 }
 
 /* Nested variable gets the same styling but keeps the cascade explicit */
-#wysiwygRoot .user-input .variable {
+#wysiwygEditor .user-input .variable {
   font-style: italic;
   color: #e5e7eb;
 }
@@ -292,7 +292,7 @@ font-weight: bold;
   Screenshots
 -------------------------------------*/
 
-#wysiwygRoot .screenshot {
+#wysiwygEditor .screenshot {
   border: 1px solid #9ca3af;
   display: block;
   margin: 12px 0;
@@ -305,7 +305,7 @@ font-weight: bold;
   (only applied if you explicitly add .draft to the editor)
 -------------------------------------*/
 
-#wysiwygRoot.draft::before {
+#wysiwygEditor.draft::before {
   content: "DRAFT";
   position: absolute;
   top: 40%;
@@ -320,19 +320,19 @@ font-weight: bold;
 
 /* Inline text formats for Lexical */
 
-#wysiwygRoot .w2h-text-bold {
+#wysiwygEditor .w2h-text-bold {
   font-weight: 600;
 }
 
-#wysiwygRoot .w2h-text-italic {
+#wysiwygEditor .w2h-text-italic {
   font-style: italic;
 }
 
-#wysiwygRoot .w2h-text-underline {
+#wysiwygEditor .w2h-text-underline {
   text-decoration: underline;
 }
 
-#wysiwygRoot .w2h-text-strike {
+#wysiwygEditor .w2h-text-strike {
   text-decoration: line-through;
 }
 

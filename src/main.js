@@ -5,6 +5,8 @@ import { initHtmlView } from './views/html.js';
 import { importHtmlToEditor } from './editor/importHtmlToEditor.js';
 import { mountWysiwygEditor } from './editor/mountWysiwyg.js';
 import { cleanHTML } from './import/htmlImport.js';
+import { makeDraftId, saveDraftBytes, openDraftFile } from "./draftStore.js";
+
 
 
 const $ = (id) => document.getElementById(id);
@@ -16,8 +18,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // Core elements
   const wordInput = $('wordInput');
   const htmlEditor = $('htmlEditor');
-  const wysiwyg = $('wysiwyg');
+  const wysiwyg = $('wysiwygEditor');
 
+  const statDraftName = $('statDraftName');
   const statBytes = $('statBytes');
   const statWords = $('statWords');
   const badgeActive = $('badgeActive');
@@ -40,7 +43,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const menuPanel = $('menuPanel');
   const menuNew = $('menuNew');
   const menuImport = $('menuImport');
-  const menuSave = $('menuSave'); // "Save draft"
+  const menuSave = $('menuSave');
+  const menuSaveAs = $('menuSaveAs');
   const menuOpenDraft = $('menuOpenDraft');
   const menuExportHtml = $('menuExportHtml');
 
@@ -100,6 +104,20 @@ if (!cssForExport) {
   let currentDraftFilename = null;   // e.g. "my-doc.drft"
   let currentDraftCreatedAt = null;  // ISO timestamp from first save/open
 
+// Draft session (Stage 8.5a)
+let currentDraftId = null;
+let currentDraftHandle = null;
+
+function updateDraftFooterName() {
+  if (!statDraftName) return;
+
+  // Prefer current session filename; fallback to a friendly label
+  const name = (currentDraftFilename && String(currentDraftFilename).trim())
+    ? currentDraftFilename
+    : 'Untitled';
+
+  statDraftName.textContent = name;
+}
 
   function getActiveView() {
     return activeView;
@@ -321,51 +339,81 @@ if (!cssForExport) {
     });
   }
 
-    function saveDraftFile() {
-    const cleanHtml = docState.getCleanHtml() || '';
+    async function saveDraftFile({ forceSaveAs = false } = {}) {
+  const cleanHtml = docState.getCleanHtml() || "";
 
-    let lexicalState = null;
-    try {
-      if (lexicalEditor) {
-        lexicalState = lexicalEditor.getEditorState().toJSON();
-      }
-    } catch (e) {
-      console.warn('Draft save: could not serialize Lexical state:', e);
+  let lexicalState = null;
+  try {
+    if (lexicalEditor) {
+      lexicalState = lexicalEditor.getEditorState().toJSON();
     }
-
-    // First-save behavior: pick a filename and store it for next time
-    if (!currentDraftFilename) {
-      currentDraftFilename = getInitialDraftFilename();
-    }
-
-    const nowIso = new Date().toISOString();
-    if (!currentDraftCreatedAt) {
-      currentDraftCreatedAt = nowIso;
-    }
-
-    const draft = {
-      schema: 'w2h-draft',
-      schemaVersion: 1,
-      createdAt: currentDraftCreatedAt,
-      updatedAt: nowIso,
-      app: { name: 'w2h', version: 'dev' },
-      state: {
-        cleanHtml,
-        lexical: lexicalState,
-      },
-      meta: {
-        activeView: activeView || 'wysiwyg',
-        filename: currentDraftFilename, // ✅ persisted name
-      },
-    };
-
-    downloadBlob({
-      bytes: JSON.stringify(draft, null, 2),
-      mime: 'application/json;charset=utf-8',
-      filename: currentDraftFilename, // ✅ no timestamp
-    });
+  } catch (e) {
+    console.warn("Draft save: could not serialize Lexical state:", e);
   }
 
+  // Stable identity (Stage 8.5a)
+  if (!currentDraftId) currentDraftId = makeDraftId();
+
+  // First-save filename
+  if (!currentDraftFilename) currentDraftFilename = getInitialDraftFilename();
+
+  updateDraftFooterName();
+
+  const nowIso = new Date().toISOString();
+  if (!currentDraftCreatedAt) currentDraftCreatedAt = nowIso;
+
+  const draft = {
+    schema: "w2h-draft",
+    schemaVersion: 1,
+    createdAt: currentDraftCreatedAt,
+    updatedAt: nowIso,
+    app: { name: "w2h", version: "dev" },
+    state: {
+      cleanHtml,
+      lexical: lexicalState,
+    },
+    meta: {
+      id: currentDraftId, // ✅ stable doc identity
+      activeView: activeView || "wysiwyg",
+      filename: currentDraftFilename, // ✅ preferred name
+      title: extractTitleFromHtml(cleanHtml) || getDocBaseName(),
+    },
+  };
+
+  const bytes = JSON.stringify(draft, null, 2);
+
+  // If user wants Save As, drop the existing handle so picker appears
+  const handleToUse = forceSaveAs ? null : currentDraftHandle;
+
+  // Try real overwrite via FS Access API
+  try {
+    const result = await saveDraftBytes({
+      bytes,
+      suggestedName: currentDraftFilename,
+      existingHandle: handleToUse,
+    });
+
+    if (result.ok) {
+  currentDraftHandle = result.handle;
+  if (result.name) currentDraftFilename = result.name;
+
+  updateDraftFooterName();   
+  return;
+}
+
+  } catch (err) {
+    console.warn("FS draft save failed, falling back to download:", err);
+  }
+
+  updateDraftFooterName();
+
+  // Fallback: old behavior (cannot overwrite, but preserves name)
+  downloadBlob({
+    bytes,
+    mime: "application/json;charset=utf-8",
+    filename: currentDraftFilename,
+  });
+}
 
   function ensureHiddenDraftInput() {
     let input = document.getElementById('draftFileInput');
@@ -384,56 +432,72 @@ if (!cssForExport) {
       if (!file) return;
 
       try {
-        const text = await file.text();
-        const draft = JSON.parse(text);
-
-        if (draft?.schema !== 'w2h-draft') throw new Error('Not a w2h draft file.');
-        if (typeof draft?.schemaVersion !== 'number') throw new Error('Draft schemaVersion missing.');
-        if (draft.schemaVersion !== 1) throw new Error(`Unsupported draft schemaVersion: ${draft.schemaVersion}`);
-
-        const cleanHtml = draft?.state?.cleanHtml ?? '';
-        const lexical = draft?.state?.lexical ?? null;
-
-                // Restore draft session info (so future saves reuse the same name)
-        currentDraftFilename = draft?.meta?.filename || null;
-        currentDraftCreatedAt = draft?.createdAt || null;
-
-        // If older drafts didn't have meta.filename, derive one once
-        if (!currentDraftFilename) {
-          currentDraftFilename = getInitialDraftFilename();
-        }
-
-
-        // Restore HTML first
-        docState.setCleanHtml(cleanHtml, { from: 'draft' });
-        if (htmlEditor) htmlEditor.value = cleanHtml;
-
-        // Restore Lexical if present
-        if (lexicalEditor && lexical) {
-          suppressWysiwygToHtml = true;
-          try {
-            const parsed = lexicalEditor.parseEditorState(JSON.stringify(lexical));
-            lexicalEditor.setEditorState(parsed);
-          } finally {
-            setTimeout(() => {
-              suppressWysiwygToHtml = false;
-            }, 0);
-          }
-        }
-
-        setActiveView('wysiwyg');
-      } catch (err) {
-        console.error('Open draft failed:', err);
-        alert(`Could not open draft. ${err?.message || 'Unknown error'}`);
-      }
+  const text = await file.text();
+  await openDraftFromText(text, { handle: null, fileName: file.name });
+} catch (err) {
+  console.error("Open draft failed:", err);
+  alert(`Could not open draft. ${err?.message || "Unknown error"}`);
+}
     });
 
     return input;
   }
 
-  function openDraftPicker() {
-    ensureHiddenDraftInput().click();
+  async function openDraftPicker() {
+  // Try FS Access API first (gives us a handle we can overwrite later)
+  try {
+    const opened = await openDraftFile();
+    if (opened.ok) {
+      await openDraftFromText(opened.text, { handle: opened.handle, fileName: opened.fileName });
+      return;
+    }
+  } catch (e) {
+    // ignore and fall back
   }
+
+  // Fallback
+  ensureHiddenDraftInput().click();
+}
+
+async function openDraftFromText(text, { handle = null, fileName = null } = {}) {
+  const draft = JSON.parse(text);
+
+  if (draft?.schema !== "w2h-draft") throw new Error("Not a w2h draft file.");
+  if (typeof draft?.schemaVersion !== "number") throw new Error("Draft schemaVersion missing.");
+  if (draft.schemaVersion !== 1) throw new Error(`Unsupported draft schemaVersion: ${draft.schemaVersion}`);
+
+  const cleanHtml = draft?.state?.cleanHtml ?? "";
+  const lexical = draft?.state?.lexical ?? null;
+
+  // Restore identity + session info
+  currentDraftId = draft?.meta?.id || null;
+  currentDraftFilename = draft?.meta?.filename || fileName || null;
+  currentDraftCreatedAt = draft?.createdAt || null;
+  currentDraftHandle = handle;
+
+  if (!currentDraftFilename) currentDraftFilename = getInitialDraftFilename();
+  if (!currentDraftId) currentDraftId = makeDraftId();
+
+  // Restore HTML first
+  docState.setCleanHtml(cleanHtml, { from: "draft" });
+  if (htmlEditor) htmlEditor.value = cleanHtml;
+
+  // Restore Lexical if present
+  if (lexicalEditor && lexical) {
+    suppressWysiwygToHtml = true;
+    try {
+      const parsed = lexicalEditor.parseEditorState(JSON.stringify(lexical));
+      lexicalEditor.setEditorState(parsed);
+    } finally {
+      setTimeout(() => (suppressWysiwygToHtml = false), 0);
+    }
+  }
+
+  setActiveView("wysiwyg");
+  updateDraftFooterName();
+
+}
+
 
   // ============================================================
   // 6) VIEWS INIT
@@ -533,14 +597,35 @@ importHtmlToEditor(lexicalEditor, String(html ?? ''));
 
   // Menu: New
   menuNew?.addEventListener('click', () => {
-  btnClearAll?.click();
+  // 1) Clear canonical HTML
+  docState.setCleanHtml('', { from: 'system' });
 
-  // Reset draft session
+  // 2) Clear editors/views
+  if (wordInput) wordInput.innerHTML = '';
+  if (htmlEditor) htmlEditor.value = '';
+
+  if (lexicalEditor) {
+    suppressWysiwygToHtml = true;
+    try {
+      importHtmlToEditor(lexicalEditor, ''); // empty doc
+    } finally {
+      setTimeout(() => (suppressWysiwygToHtml = false), 0);
+    }
+  }
+
+  // 3) Reset draft session
   currentDraftFilename = null;
   currentDraftCreatedAt = null;
+  currentDraftId = null;
+  currentDraftHandle = null;
+
+  // 4) UI refresh
+  updateDraftFooterName();
+  setActiveView('wysiwyg');
 
   menuPanel?.classList.add('hidden');
 });
+
 
 
   // Menu: Import (switch to Word view)
@@ -605,6 +690,12 @@ setActiveView('wysiwyg');
     menuPanel?.classList.add('hidden');
   });
 
+  menuSaveAs?.addEventListener("click", async () => {
+  await saveDraftFile({ forceSaveAs: true });
+  menuPanel?.classList.add("hidden");
+});
+
+
 
   // Menu: Open draft
   menuOpenDraft?.addEventListener('click', () => {
@@ -631,6 +722,7 @@ setActiveView('wysiwyg');
   // ============================================================
   docState.setCleanHtml('', { from: 'system' });
   setActiveView('wysiwyg');
+  updateDraftFooterName();
 
   // ============================================================
   // 9) MOUNT LEXICAL (last)
