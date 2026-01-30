@@ -6,7 +6,7 @@ import { importHtmlToEditor } from './editor/importHtmlToEditor.js';
 import { mountWysiwygEditor } from './editor/mountWysiwyg.js';
 import { cleanHTML } from './import/htmlImport.js';
 import { makeDraftId, saveDraftBytes, openDraftFile } from "./draftStore.js";
-
+import { prettyHtml } from './utils/prettyHtml.js';
 
 
 const $ = (id) => document.getElementById(id);
@@ -100,6 +100,8 @@ if (!cssForExport) {
 
   let activeView = 'wysiwyg';
 
+  let htmlViewApi = null; // will be set after initHtmlView()
+
     // Draft session state (persists across saves until "New" or reload)
   let currentDraftFilename = null;   // e.g. "my-doc.drft"
   let currentDraftCreatedAt = null;  // ISO timestamp from first save/open
@@ -122,6 +124,7 @@ function updateDraftFooterName() {
   function getActiveView() {
     return activeView;
   }
+  
 
   function setActiveView(view) {
     activeView = view;
@@ -136,6 +139,11 @@ function updateDraftFooterName() {
     toolsHtml?.classList.toggle('hidden', view !== 'html');
     toolsWysiwyg?.classList.toggle('hidden', view !== 'wysiwyg');
 
+    if (view === 'html' && htmlEditor) {
+  htmlViewApi?.onEnter?.();
+}
+
+
     // Rail highlight
     ['navWord', 'navHtml', 'navWysiwyg'].forEach((id) => {
       const el = $(id);
@@ -148,11 +156,6 @@ function updateDraftFooterName() {
     if (badgeActive) {
       const label = view === 'word' ? 'Word' : view === 'html' ? 'HTML' : 'WYSIWYG';
       badgeActive.textContent = `View: ${label}`;
-    }
-
-    // When entering HTML view, refresh the textarea from docState
-    if (view === 'html' && htmlEditor) {
-      htmlEditor.value = docState.getCleanHtml() || '';
     }
   }
 
@@ -249,7 +252,11 @@ function updateDraftFooterName() {
   // ============================================================
   // 4) CLIPBOARD
   // ============================================================
-    async function copyExportFragment() {
+  async function copyExportFragment() {
+    if (htmlViewApi?.hasPendingEdits?.()) {
+  htmlViewApi.showUsedLastAppliedMessage?.();
+}
+
     try {
       const fragment = getExportFragmentHtml();
       if (!ensureExportIsValidOrAlert(fragment)) return;
@@ -261,6 +268,7 @@ function updateDraftFooterName() {
         }),
       ];
       await navigator.clipboard.write(data);
+
     } catch {
       // Clipboard blocked or unsupported — silently fail for now
     }
@@ -271,6 +279,7 @@ function updateDraftFooterName() {
   // 5) EXPORT + DRAFT SAVE/OPEN
   // ============================================================
     function getExportFragmentHtml() {
+      
     // Stage 7: export is always the canonical clean HTML fragment
     return String(docState.getCleanHtml() || '').trim();
   }
@@ -313,15 +322,20 @@ function updateDraftFooterName() {
   }
   
     function exportFragmentFile() {
-    const fragment = getExportFragmentHtml();
-    if (!ensureExportIsValidOrAlert(fragment)) return;
-
-    downloadBlob({
-      bytes: fragment,
-      mime: 'text/html;charset=utf-8',
-      filename: `${getDocBaseName()}-${makeTimestampSlug()}.html`,
-    });
+  if (htmlViewApi?.hasPendingEdits?.()) {
+    htmlViewApi.showUsedLastAppliedMessage?.();
   }
+
+  const fragment = getExportFragmentHtml();
+  if (!ensureExportIsValidOrAlert(fragment)) return;
+
+  downloadBlob({
+    bytes: fragment,
+    mime: 'text/html;charset=utf-8',
+    filename: `${getDocBaseName()}-${makeTimestampSlug()}.html`,
+  });
+}
+
 
   function publishStandaloneHtmlFile() {
     const content = getExportFragmentHtml(); // publish uses the same canonical fragment
@@ -549,26 +563,21 @@ async function openDraftFromText(text, { handle = null, fileName = null } = {}) 
 });
 
 
-  initHtmlView({
-    elements: sharedElements,
-    docState,
-    loadHtmlIntoEditor: (html) => {
-      if (!lexicalEditor) return;
+  htmlViewApi = initHtmlView({
+  elements: sharedElements,
+  docState,
+  loadHtmlIntoEditor: (html) => {
+    if (!lexicalEditor) return;
 
-      suppressWysiwygToHtml = true;
+    suppressWysiwygToHtml = true;
+    try {
+      importHtmlToEditor(lexicalEditor, String(html ?? ''));
+    } finally {
+      setTimeout(() => (suppressWysiwygToHtml = false), 0);
+    }
+  },
+});
 
-      try {
-importHtmlToEditor(lexicalEditor, String(html ?? ''));
-      } catch (err) {
-        // rethrow so HTML view can surface it
-        throw err;
-      } finally {
-        setTimeout(() => {
-          suppressWysiwygToHtml = false;
-        }, 0);
-      }
-    },
-  });
 
   // ============================================================
   // 7) EVENT WIRING (one place, after all declarations)
@@ -595,23 +604,31 @@ importHtmlToEditor(lexicalEditor, String(html ?? ''));
     menuPanel?.classList.toggle('hidden');
   });
 
-  // Menu: New
-  menuNew?.addEventListener('click', () => {
+  // INVARIANT (8.5c):
+// - Word view uses a contenteditable DIV => clear with innerHTML, not .value
+// - HTML view is a TEXTAREA => clear with .value
+// - Lexical state is derived => clear via importHtmlToEditor(editor, '')
+
+function clearWysiwygToEmpty() {
+  if (!lexicalEditor) return;
+
+  suppressWysiwygToHtml = true;
+  try {
+    importHtmlToEditor(lexicalEditor, ''); // empty doc
+  } finally {
+    setTimeout(() => (suppressWysiwygToHtml = false), 0);
+  }
+}
+
+// Menu: New
+menuNew?.addEventListener('click', () => {
   // 1) Clear canonical HTML
   docState.setCleanHtml('', { from: 'system' });
 
   // 2) Clear editors/views
   if (wordInput) wordInput.innerHTML = '';
   if (htmlEditor) htmlEditor.value = '';
-
-  if (lexicalEditor) {
-    suppressWysiwygToHtml = true;
-    try {
-      importHtmlToEditor(lexicalEditor, ''); // empty doc
-    } finally {
-      setTimeout(() => (suppressWysiwygToHtml = false), 0);
-    }
-  }
+  clearWysiwygToEmpty();
 
   // 3) Reset draft session
   currentDraftFilename = null;
@@ -625,6 +642,7 @@ importHtmlToEditor(lexicalEditor, String(html ?? ''));
 
   menuPanel?.classList.add('hidden');
 });
+
 
 
 
@@ -710,10 +728,10 @@ setActiveView('wysiwyg');
   });
 
     // Keep export fragment in sync with HTML view edits
-  htmlEditor?.addEventListener('input', () => {
-    if (getActiveView() !== 'html') return;
-    docState.setCleanHtml(htmlEditor.value || '', { from: 'html' });
-  });
+  // htmlEditor?.addEventListener('input', () => {
+  //   if (getActiveView() !== 'html') return;
+  //   docState.setCleanHtml(htmlEditor.value || '', { from: 'html' });
+  // });
 
 
 

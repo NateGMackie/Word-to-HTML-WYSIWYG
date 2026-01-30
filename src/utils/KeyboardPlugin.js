@@ -1,4 +1,4 @@
-// src/plugins/KeyboardPlugin.js
+// src/utils/KeyboardPlugin.js
 import React from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import {

@@ -37,7 +37,11 @@ export function initWordView({
   setActiveView("wysiwyg");
 });
 
-
+  btnClearAll?.addEventListener("click", () => {
+  // Word Reset is *not* "New document" — it just clears the Word paste area.
+  wordInput.innerHTML = "";
+  wordInput.focus?.();
+});
   // Reset everything
   // btnClearAll?.addEventListener("click", () => {
     // wordInput.innerHTML = "";
