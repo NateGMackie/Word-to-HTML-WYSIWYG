@@ -3,105 +3,73 @@ import { createDocState } from './import/docState.js';
 import { initWordView } from './views/word.js';
 import { initHtmlView } from './views/html.js';
 import { importHtmlToEditor } from './editor/importHtmlToEditor.js';
-
-// import { initWysiwygView } from './views/wysiwyg.js';
-// import { initHotkeys } from './ux/hotkeys.js';
-
-
 import { mountWysiwygEditor } from './editor/mountWysiwyg.js';
+import { cleanHTML } from './import/htmlImport.js';
+import { makeDraftId, saveDraftBytes, openDraftFile } from "./draftStore.js";
+import { prettyHtml } from './utils/prettyHtml.js';
+
 
 const $ = (id) => document.getElementById(id);
 
 window.addEventListener('DOMContentLoaded', () => {
+  // ============================================================
+  // 1) DOM ELEMENTS (declare everything up front)
+  // ============================================================
   // Core elements
   const wordInput = $('wordInput');
   const htmlEditor = $('htmlEditor');
-  const wysiwyg = $('wysiwyg');
+  const wysiwyg = $('wysiwygEditor');
 
+  const statDraftName = $('statDraftName');
   const statBytes = $('statBytes');
   const statWords = $('statWords');
   const badgeActive = $('badgeActive');
 
+  // Global buttons
   const btnCopy = $('btnCopy');
   const btnSave = $('btnSave');
 
-  if (menuSave && btnSave && menuPanel) {
-  menuSave.addEventListener('click', () => {
-    btnSave.click();      // trigger your existing save logic
-    menuPanel.classList.add('hidden'); // close menu
-  });
-}
+  const btnThemeToggle = $('btnThemeToggle');
+  const body = document.body;
 
-
-
-const btnThemeToggle = document.getElementById('btnThemeToggle');
-const body = document.body;
-
-if (btnThemeToggle) {
-  btnThemeToggle.addEventListener('click', () => {
-    const isDark = body.classList.toggle('theme-light'); 
-    // If theme-light is ON, switch label
-    btnThemeToggle.textContent = body.classList.contains('theme-light')
-      ? 'LIGHT'
-      : 'DARK';
-  });
-}
-
+  // Word/HTML tools
   const btnPaste = $('btnPaste');
   const btnClean = $('btnClean');
-
-  const menuNew = document.getElementById('menuNew');
-const btnClearAll = document.getElementById('btnClearAll');
-
-if (menuNew && btnClearAll && menuPanel) {
-  menuNew.addEventListener('click', () => {
-    btnClearAll.click();          // reuse existing reset behavior
-    menuPanel.classList.add('hidden');  // close the menu
-  });
-}
-
+  const btnClearAll = $('btnClearAll');
   const btnFormatHtml = $('btnFormatHtml');
 
+  // Menu
+  const btnMenu = $('btnMenu');
+  const menuPanel = $('menuPanel');
+  const menuNew = $('menuNew');
+  const menuImport = $('menuImport');
+  const menuSave = $('menuSave');
+  const menuSaveAs = $('menuSaveAs');
+  const menuOpenDraft = $('menuOpenDraft');
+  const menuExportHtml = $('menuExportHtml');
+
+  // Toolbars
   const toolsWord = $('toolsWord');
   const toolsHtml = $('toolsHtml');
   const toolsWysiwyg = $('toolsWysiwyg');
 
-  //initWysiwygToolbarBehavior(wysiwyg);
-
-
+  // Views
   const viewWord = $('viewWord');
   const viewHtml = $('viewHtml');
   const viewWysiwyg = $('viewWysiwyg');
 
+  // Navigation
   const navWord = $('navWord');
   const navHtml = $('navHtml');
   const navWysiwyg = $('navWysiwyg');
 
-  if (btnMenu && menuPanel) {
-  btnMenu.addEventListener('click', () => {
-    menuPanel.classList.toggle('hidden');
-  });
-}
-
-if (menuImport && navWord && menuPanel) {
-  menuImport.addEventListener('click', () => {
-    // Reuse existing logic for switching to Word view
-    navWord.click();
-    // Close the menu
-    menuPanel.classList.add('hidden');
-  });
-}
-
+  // WYSIWYG toolbar buttons
   const stylesSelect = $('stylesSelect');
   const btnScreenshot = $('btnScreenshot');
   const btnNormalizeTable = $('btnNormalizeTable');
   const btnUserInput = $('btnUserInput');
   const btnVariable = $('btnVariable');
   const btnHr = $('btnHr');
-
-  const hiddenClipboard = $('hiddenClipboard');
-  const exportCssTemplate = $('export-css');
-  const cssForExport = exportCssTemplate ? exportCssTemplate.textContent.trim() : '';
 
   const btnUl = $('btnUl');
   const btnOl = $('btnOl');
@@ -112,126 +80,51 @@ if (menuImport && navWord && menuPanel) {
   const btnAlignRight = $('btnAlignRight');
   const btnAlignJustify = $('btnAlignJustify');
 
-// function initWysiwygToolbarBehavior(editor) {
-//   if (!editor) return;
+  // Export CSS
+  const exportCssTemplate = $('export-css');
+const cssForExport = exportCssTemplate
+  ? (exportCssTemplate.content?.textContent || exportCssTemplate.textContent || '').trim()
+  : '';
 
-//   const toolbar = document.getElementById('toolsWysiwyg');
+if (!cssForExport) {
+  console.warn('[export] No export CSS found. Check <template id="export-css"> in index.html');
+}
 
-//   // Map the buttons we care about for "active" states
-//   const buttonMap = {
-//     bold: toolbar.querySelector('[data-action="bold"]'),
-//     italic: toolbar.querySelector('[data-action="italic"]'),
-//     underline: toolbar.querySelector('[data-action="underline"]'),
-//     strikeThrough: toolbar.querySelector('[data-action="strikeThrough"]'),
-//     subscript: toolbar.querySelector('[data-action="subscript"]'),
-//     superscript: toolbar.querySelector('[data-action="superscript"]'),
+  // ============================================================
+  // 2) STATE
+  // ============================================================
+  let lexicalEditor = null;
+  let suppressWysiwygToHtml = false;
 
-//     ul: document.getElementById('btnUl'),
-//     ol: document.getElementById('btnOl'),
-
-//     alignLeft: document.getElementById('btnAlignLeft'),
-//     alignCenter: document.getElementById('btnAlignCenter'),
-//     alignRight: document.getElementById('btnAlignRight'),
-//     alignJustify: document.getElementById('btnAlignJustify'),
-//   };
-
-//   function clearActiveStates() {
-//     Object.values(buttonMap).forEach((btn) => {
-//       if (btn) btn.classList.remove('is-active');
-//     });
-//   }
-
-//   function updateToolbarState() {
-//     const sel = document.getSelection();
-//     if (!sel || sel.rangeCount === 0) {
-//       clearActiveStates();
-//       return;
-//     }
-
-//     const range = sel.getRangeAt(0);
-//     const container = range.commonAncestorContainer;
-
-//     // If the selection is outside the editor, clear states
-//     if (!editor.contains(container)) {
-//       clearActiveStates();
-//       return;
-//     }
-
-//     // Inline styles: use queryCommandState (works well if you're using execCommand)
-//     const inlineStates = {
-//       bold: document.queryCommandState('bold'),
-//       italic: document.queryCommandState('italic'),
-//       underline: document.queryCommandState('underline'),
-//       strikeThrough: document.queryCommandState('strikeThrough'),
-//       subscript: document.queryCommandState('subscript'),
-//       superscript: document.queryCommandState('superscript'),
-//     };
-
-//     Object.entries(inlineStates).forEach(([key, isOn]) => {
-//       const btn = buttonMap[key];
-//       if (!btn) return;
-//       btn.classList.toggle('is-active', !!isOn);
-//     });
-
-//     // Lists
-//     const listStates = {
-//       ul: document.queryCommandState('insertUnorderedList'),
-//       ol: document.queryCommandState('insertOrderedList'),
-//     };
-
-//     Object.entries(listStates).forEach(([key, isOn]) => {
-//       const btn = buttonMap[key];
-//       if (!btn) return;
-//       btn.classList.toggle('is-active', !!isOn);
-//     });
-
-//     // Alignment
-//     const alignStates = {
-//       alignLeft: document.queryCommandState('justifyLeft'),
-//       alignCenter: document.queryCommandState('justifyCenter'),
-//       alignRight: document.queryCommandState('justifyRight'),
-//       alignJustify: document.queryCommandState('justifyFull'),
-//     };
-
-//     Object.entries(alignStates).forEach(([key, isOn]) => {
-//       const btn = buttonMap[key];
-//       if (!btn) return;
-//       btn.classList.toggle('is-active', !!isOn);
-//     });
-//   }
-
-//   // 1) Don’t let toolbar buttons steal focus
-//   document.querySelectorAll('#toolsWysiwyg .tbtn').forEach((button) => {
-//     button.addEventListener('mousedown', (event) => {
-//       event.preventDefault();
-//     });
-
-//     button.addEventListener('click', () => {
-//       editor.focus();
-//       // Let the command run first, then sync the toolbar state
-//       setTimeout(updateToolbarState, 0);
-//     });
-//   });
-
-//   // 2) Update toolbar as the user moves around in the editor
-//   document.addEventListener('selectionchange', updateToolbarState);
-//   editor.addEventListener('keyup', updateToolbarState);
-//   editor.addEventListener('mouseup', updateToolbarState);
-
-//   // Initial sync
-//   updateToolbarState();
-// }
-
-let lexicalEditor = null;
-let suppressWysiwygToHtml = false;
-
-
-  // ---- Document state ----
   const docState = createDocState({ htmlEditor, wysiwyg, statBytes, statWords });
-  
 
-  // ---- View switching ----
   let activeView = 'wysiwyg';
+
+  let htmlViewApi = null; // will be set after initHtmlView()
+
+    // Draft session state (persists across saves until "New" or reload)
+  let currentDraftFilename = null;   // e.g. "my-doc.drft"
+  let currentDraftCreatedAt = null;  // ISO timestamp from first save/open
+
+// Draft session (Stage 8.5a)
+let currentDraftId = null;
+let currentDraftHandle = null;
+
+function updateDraftFooterName() {
+  if (!statDraftName) return;
+
+  // Prefer current session filename; fallback to a friendly label
+  const name = (currentDraftFilename && String(currentDraftFilename).trim())
+    ? currentDraftFilename
+    : 'Untitled';
+
+  statDraftName.textContent = name;
+}
+
+  function getActiveView() {
+    return activeView;
+  }
+  
 
   function setActiveView(view) {
     activeView = view;
@@ -246,6 +139,11 @@ let suppressWysiwygToHtml = false;
     toolsHtml?.classList.toggle('hidden', view !== 'html');
     toolsWysiwyg?.classList.toggle('hidden', view !== 'wysiwyg');
 
+    if (view === 'html' && htmlEditor) {
+  htmlViewApi?.onEnter?.();
+}
+
+
     // Rail highlight
     ['navWord', 'navHtml', 'navWysiwyg'].forEach((id) => {
       const el = $(id);
@@ -259,67 +157,15 @@ let suppressWysiwygToHtml = false;
       const label = view === 'word' ? 'Word' : view === 'html' ? 'HTML' : 'WYSIWYG';
       badgeActive.textContent = `View: ${label}`;
     }
-
-    if (view === 'html' && htmlEditor) {
-      htmlEditor.value = docState.getCleanHtml() || '';
-    }
   }
 
-  
-
-  function getActiveView() {
-    return activeView;
-  }
-
-  // ---- Clipboard & Save ----
-  async function copyActive() {
-    try {
-      if (activeView === 'html') {
-        await navigator.clipboard.writeText(htmlEditor.value);
-      } else if (activeView === 'wysiwyg') {
-        const html =
-    docState.getCleanHtml() ||
-    (wysiwyg?.innerHTML || '');
-
-  const data = [
-    new ClipboardItem({
-      'text/html': new Blob([html], { type: 'text/html' }),
-      'text/plain': new Blob([html.replace(/<[^>]+>/g, '')], {
-        type: 'text/plain',
-      }),
-    }),
-        ];
-        await navigator.clipboard.write(data);
-      } else {
-        await navigator.clipboard.writeText(wordInput.innerHTML);
-      }
-    } catch {
-      // Fallback for older browsers / blocked clipboard
-      // if (!hiddenClipboard) return;
-      // hiddenClipboard.value =
-        // activeView === 'html'
-          // ? htmlEditor.value
-          // : activeView === 'wysiwyg'
-          // ? wysiwyg.innerHTML
-          // : wordInput.innerHTML;
-      // hiddenClipboard.focus();
-      // hiddenClipboard.select();
-      // document.execCommand('copy');
-    }
-  }
-
-  function saveFile() {
-    const content = docState.getCleanHtml() || (wysiwyg?.innerHTML || '');
-    const doc = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cleaned Content</title>
-<style>${cssForExport}</style></head><body>${content}</body></html>`;
-
+  // ============================================================
+  // 3) HELPERS (download/export, timestamps)
+  // ============================================================
+  function downloadBlob({ bytes, mime, filename }) {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(
-      new Blob([doc], { type: 'text/html;charset=utf-8' }),
-    );
-    a.download = 'clean-content.html';
+    a.href = URL.createObjectURL(new Blob([bytes], { type: mime }));
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     setTimeout(() => {
@@ -328,7 +174,348 @@ let suppressWysiwygToHtml = false;
     }, 0);
   }
 
-  // ---- Views init ----
+  function makeTimestampSlug(d = new Date()) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    return `${yyyy}${mm}${dd}-${hh}${mi}`;
+  }
+
+    function htmlToText(html) {
+    try {
+      const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+      return (doc.body?.textContent || '').trim();
+    } catch {
+      return String(html || '').trim();
+    }
+  }
+
+  function extractTitleFromHtml(html) {
+    const source = String(html || '').trim();
+    if (!source) return '';
+
+    try {
+      const doc = new DOMParser().parseFromString(source, 'text/html');
+
+      // Prefer first heading as "title"
+      const heading = doc.querySelector('h1,h2,h3,h4,h5,h6');
+      if (heading) {
+        const t = (heading.textContent || '').trim();
+        if (t) return t;
+      }
+
+      // Fallback: first non-empty line of visible text
+      const text = (doc.body?.textContent || '').replace(/\s+/g, ' ').trim();
+      return text;
+    } catch {
+      // Fallback: treat input as plain text, take first line-ish chunk
+      return source.replace(/\s+/g, ' ').trim();
+    }
+  }
+
+  function slugifyFilename(input, { maxLen = 60 } = {}) {
+    const raw = String(input || '').trim();
+    if (!raw) return 'blank';
+
+    // Normalize and strip diacritics
+    const normalized = raw.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+
+    // Replace anything that’s not filename-friendly with spaces
+    const cleaned = normalized
+      .replace(/['"]/g, '')           // drop quotes
+      .replace(/[^a-zA-Z0-9]+/g, ' ')  // non-alnum -> space
+      .trim()
+      .replace(/\s+/g, '-')
+      .toLowerCase();
+
+    const clipped = cleaned.slice(0, maxLen).replace(/-+$/g, '');
+    return clipped || 'blank';
+  }
+
+  function getDocBaseName() {
+    // Prefer canonical clean HTML, fallback to current WYSIWYG DOM
+    const html = docState.getCleanHtml() || (wysiwyg?.innerHTML || '');
+    const title = extractTitleFromHtml(html);
+
+    // Use only a portion (slugify handles truncation)
+    return slugifyFilename(title || htmlToText(html) || 'blank');
+  }
+
+    function getInitialDraftFilename() {
+    return `${getDocBaseName()}.drft`;
+  }
+
+
+  // ============================================================
+  // 4) CLIPBOARD
+  // ============================================================
+  async function copyExportFragment() {
+    if (htmlViewApi?.hasPendingEdits?.()) {
+  htmlViewApi.showUsedLastAppliedMessage?.();
+}
+
+    try {
+      const fragment = getExportFragmentHtml();
+      if (!ensureExportIsValidOrAlert(fragment)) return;
+
+      const data = [
+        new ClipboardItem({
+          'text/html': new Blob([fragment], { type: 'text/html' }),
+'text/plain': new Blob([fragment], { type: 'text/plain' }),
+        }),
+      ];
+      await navigator.clipboard.write(data);
+
+    } catch {
+      // Clipboard blocked or unsupported — silently fail for now
+    }
+  }
+
+
+  // ============================================================
+  // 5) EXPORT + DRAFT SAVE/OPEN
+  // ============================================================
+    function getExportFragmentHtml() {
+      
+    // Stage 7: export is always the canonical clean HTML fragment
+    return String(docState.getCleanHtml() || '').trim();
+  }
+
+  function validateExportFragmentAgainstContract(html) {
+    const source = String(html || '').trim();
+
+    // Basic “gate” (expand later as contract hardens)
+    if (!source) return { ok: false, message: 'Nothing to export yet.' };
+
+    // Block full-document exports from slipping into fragment export
+    const forbidden = [
+      '<!doctype',
+      '<html',
+      '<head',
+      '<body',
+      '<script',
+      '<style',
+    ];
+
+    const lower = source.toLowerCase();
+    const hit = forbidden.find((t) => lower.includes(t));
+    if (hit) {
+      return {
+        ok: false,
+        message: `Export must be an HTML fragment (no ${hit}...). Use Publish for a full standalone HTML page.`,
+      };
+    }
+
+    return { ok: true };
+  }
+
+  function ensureExportIsValidOrAlert(html) {
+    const result = validateExportFragmentAgainstContract(html);
+    if (!result.ok) {
+      alert(result.message || 'Export blocked: content does not match the contract.');
+      return false;
+    }
+    return true;
+  }
+  
+    function exportFragmentFile() {
+  if (htmlViewApi?.hasPendingEdits?.()) {
+    htmlViewApi.showUsedLastAppliedMessage?.();
+  }
+
+  const fragment = getExportFragmentHtml();
+  if (!ensureExportIsValidOrAlert(fragment)) return;
+
+  downloadBlob({
+    bytes: fragment,
+    mime: 'text/html;charset=utf-8',
+    filename: `${getDocBaseName()}-${makeTimestampSlug()}.html`,
+  });
+}
+
+
+  function publishStandaloneHtmlFile() {
+    const content = getExportFragmentHtml(); // publish uses the same canonical fragment
+    if (!ensureExportIsValidOrAlert(content)) return;
+
+    const doc = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${extractTitleFromHtml(content) || 'Document'}</title>
+<style>${cssForExport}</style></head><body>${content}</body></html>`;
+
+    downloadBlob({
+      bytes: doc,
+      mime: 'text/html;charset=utf-8',
+      filename: `${getDocBaseName()}-${makeTimestampSlug()}.html`,
+    });
+  }
+
+    async function saveDraftFile({ forceSaveAs = false } = {}) {
+  const cleanHtml = docState.getCleanHtml() || "";
+
+  let lexicalState = null;
+  try {
+    if (lexicalEditor) {
+      lexicalState = lexicalEditor.getEditorState().toJSON();
+    }
+  } catch (e) {
+    console.warn("Draft save: could not serialize Lexical state:", e);
+  }
+
+  // Stable identity (Stage 8.5a)
+  if (!currentDraftId) currentDraftId = makeDraftId();
+
+  // First-save filename
+  if (!currentDraftFilename) currentDraftFilename = getInitialDraftFilename();
+
+  updateDraftFooterName();
+
+  const nowIso = new Date().toISOString();
+  if (!currentDraftCreatedAt) currentDraftCreatedAt = nowIso;
+
+  const draft = {
+    schema: "w2h-draft",
+    schemaVersion: 1,
+    createdAt: currentDraftCreatedAt,
+    updatedAt: nowIso,
+    app: { name: "w2h", version: "dev" },
+    state: {
+      cleanHtml,
+      lexical: lexicalState,
+    },
+    meta: {
+      id: currentDraftId, // ✅ stable doc identity
+      activeView: activeView || "wysiwyg",
+      filename: currentDraftFilename, // ✅ preferred name
+      title: extractTitleFromHtml(cleanHtml) || getDocBaseName(),
+    },
+  };
+
+  const bytes = JSON.stringify(draft, null, 2);
+
+  // If user wants Save As, drop the existing handle so picker appears
+  const handleToUse = forceSaveAs ? null : currentDraftHandle;
+
+  // Try real overwrite via FS Access API
+  try {
+    const result = await saveDraftBytes({
+      bytes,
+      suggestedName: currentDraftFilename,
+      existingHandle: handleToUse,
+    });
+
+    if (result.ok) {
+  currentDraftHandle = result.handle;
+  if (result.name) currentDraftFilename = result.name;
+
+  updateDraftFooterName();   
+  return;
+}
+
+  } catch (err) {
+    console.warn("FS draft save failed, falling back to download:", err);
+  }
+
+  updateDraftFooterName();
+
+  // Fallback: old behavior (cannot overwrite, but preserves name)
+  downloadBlob({
+    bytes,
+    mime: "application/json;charset=utf-8",
+    filename: currentDraftFilename,
+  });
+}
+
+  function ensureHiddenDraftInput() {
+    let input = document.getElementById('draftFileInput');
+    if (input) return input;
+
+    input = document.createElement('input');
+    input.id = 'draftFileInput';
+    input.type = 'file';
+    input.accept = '.drft,application/json';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.addEventListener('change', async () => {
+      const file = input.files && input.files[0];
+      input.value = ''; // allow re-opening same file later
+      if (!file) return;
+
+      try {
+  const text = await file.text();
+  await openDraftFromText(text, { handle: null, fileName: file.name });
+} catch (err) {
+  console.error("Open draft failed:", err);
+  alert(`Could not open draft. ${err?.message || "Unknown error"}`);
+}
+    });
+
+    return input;
+  }
+
+  async function openDraftPicker() {
+  // Try FS Access API first (gives us a handle we can overwrite later)
+  try {
+    const opened = await openDraftFile();
+    if (opened.ok) {
+      await openDraftFromText(opened.text, { handle: opened.handle, fileName: opened.fileName });
+      return;
+    }
+  } catch (e) {
+    // ignore and fall back
+  }
+
+  // Fallback
+  ensureHiddenDraftInput().click();
+}
+
+async function openDraftFromText(text, { handle = null, fileName = null } = {}) {
+  const draft = JSON.parse(text);
+
+  if (draft?.schema !== "w2h-draft") throw new Error("Not a w2h draft file.");
+  if (typeof draft?.schemaVersion !== "number") throw new Error("Draft schemaVersion missing.");
+  if (draft.schemaVersion !== 1) throw new Error(`Unsupported draft schemaVersion: ${draft.schemaVersion}`);
+
+  const cleanHtml = draft?.state?.cleanHtml ?? "";
+  const lexical = draft?.state?.lexical ?? null;
+
+  // Restore identity + session info
+  currentDraftId = draft?.meta?.id || null;
+  currentDraftFilename = draft?.meta?.filename || fileName || null;
+  currentDraftCreatedAt = draft?.createdAt || null;
+  currentDraftHandle = handle;
+
+  if (!currentDraftFilename) currentDraftFilename = getInitialDraftFilename();
+  if (!currentDraftId) currentDraftId = makeDraftId();
+
+  // Restore HTML first
+  docState.setCleanHtml(cleanHtml, { from: "draft" });
+  if (htmlEditor) htmlEditor.value = cleanHtml;
+
+  // Restore Lexical if present
+  if (lexicalEditor && lexical) {
+    suppressWysiwygToHtml = true;
+    try {
+      const parsed = lexicalEditor.parseEditorState(JSON.stringify(lexical));
+      lexicalEditor.setEditorState(parsed);
+    } finally {
+      setTimeout(() => (suppressWysiwygToHtml = false), 0);
+    }
+  }
+
+  setActiveView("wysiwyg");
+  updateDraftFooterName();
+
+}
+
+
+  // ============================================================
+  // 6) VIEWS INIT
+  // ============================================================
   const sharedElements = {
     wordInput,
     htmlEditor,
@@ -357,81 +544,217 @@ let suppressWysiwygToHtml = false;
   };
 
   initWordView({
-    elements: sharedElements,
-    docState,
-    setActiveView,
-  });
+  elements: sharedElements,
+  docState,
+  setActiveView,
+  loadHtmlIntoEditor: (html) => {
+    if (!lexicalEditor) return;
 
-  initHtmlView({
+    suppressWysiwygToHtml = true;
+
+    try {
+      importHtmlToEditor(lexicalEditor, String(html ?? ''));
+    } finally {
+      setTimeout(() => {
+        suppressWysiwygToHtml = false;
+      }, 0);
+    }
+  },
+});
+
+
+  htmlViewApi = initHtmlView({
   elements: sharedElements,
   docState,
   loadHtmlIntoEditor: (html) => {
     if (!lexicalEditor) return;
 
-    // We are driving Lexical from HTML right now; don't let Lexical echo back.
     suppressWysiwygToHtml = true;
-    importHtmlToEditor(lexicalEditor, html);
-
-    // Release suppression on the next tick after Lexical processes the update.
-    setTimeout(() => {
-      suppressWysiwygToHtml = false;
-    }, 0);
+    try {
+      importHtmlToEditor(lexicalEditor, String(html ?? ''));
+    } finally {
+      setTimeout(() => (suppressWysiwygToHtml = false), 0);
+    }
   },
 });
 
 
+  // ============================================================
+  // 7) EVENT WIRING (one place, after all declarations)
+  // ============================================================
+  // Theme
+  if (btnThemeToggle) {
+    btnThemeToggle.addEventListener('click', () => {
+      body.classList.toggle('theme-light');
+      btnThemeToggle.textContent = body.classList.contains('theme-light') ? 'LIGHT' : 'DARK';
+    });
+  }
 
-  //initWysiwygView({
-  //  elements: sharedElements,
-  //  docState,
-  //});
-
-  
-
-  // ---- Navigation ----
+  // Nav
   navWord?.addEventListener('click', () => setActiveView('word'));
   navHtml?.addEventListener('click', () => setActiveView('html'));
   navWysiwyg?.addEventListener('click', () => setActiveView('wysiwyg'));
 
-  // ---- Global buttons ----
-  btnCopy?.addEventListener('click', copyActive);
-  btnSave?.addEventListener('click', saveFile);
+  // Global buttons
+  btnCopy?.addEventListener('click', copyExportFragment);
+  btnSave?.addEventListener('click', exportFragmentFile);
 
-  // ---- Hotkeys ----
-  // initHotkeys({
-  //   setActiveView,
-  //   wysiwygCommand: (cmdName) => {
-  //     // Reuse the same toolbar wiring by "clicking" toolbar buttons
-  //     const map = {
-  //       bold: '[data-action="bold"]',
-  //       italic: '[data-action="italic"]',
-  //       underline: '[data-action="underline"]',
-  //     };
-  //     const sel = map[cmdName] && document.querySelector(map[cmdName]);
-  //     sel?.click();
-  //   },
-  // });
+  // Menu toggle
+  btnMenu?.addEventListener('click', () => {
+    menuPanel?.classList.toggle('hidden');
+  });
 
-  // ---- Init state ----
+  // INVARIANT (8.5c):
+// - Word view uses a contenteditable DIV => clear with innerHTML, not .value
+// - HTML view is a TEXTAREA => clear with .value
+// - Lexical state is derived => clear via importHtmlToEditor(editor, '')
+
+function clearWysiwygToEmpty() {
+  if (!lexicalEditor) return;
+
+  suppressWysiwygToHtml = true;
+  try {
+    importHtmlToEditor(lexicalEditor, ''); // empty doc
+  } finally {
+    setTimeout(() => (suppressWysiwygToHtml = false), 0);
+  }
+}
+
+// Menu: New
+menuNew?.addEventListener('click', () => {
+  // 1) Clear canonical HTML
   docState.setCleanHtml('', { from: 'system' });
+
+  // 2) Clear editors/views
+  if (wordInput) wordInput.innerHTML = '';
+  if (htmlEditor) htmlEditor.value = '';
+  clearWysiwygToEmpty();
+
+  // 3) Reset draft session
+  currentDraftFilename = null;
+  currentDraftCreatedAt = null;
+  currentDraftId = null;
+  currentDraftHandle = null;
+
+  // 4) UI refresh
+  updateDraftFooterName();
   setActiveView('wysiwyg');
 
-  // Mount Lexical WYSIWYG last, and sync editor → HTML view + docState
-mountWysiwygEditor({
-  onEditorReady: (editor) => {
-    lexicalEditor = editor;
-  },
-  onHtmlChange: (html) => {
+  menuPanel?.classList.add('hidden');
+});
+
+
+
+
+  // Menu: Import (switch to Word view)
+  menuImport?.addEventListener('click', async () => {
+  try {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.html,.htm,.drft';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      input.remove();
+      if (!file) return;
+
+      const name = (file.name || '').toLowerCase();
+
+      // Route .drft to existing draft loader if you want Import to handle drafts too
+      if (name.endsWith('.drft')) {
+        // Option A: reuse your existing picker flow (recommended if you already have a solid loader)
+        // openDraftFromFile(file);
+
+        // Option B: if you only have openDraftPicker(), keep Import as HTML-only for now:
+        alert('Use “Open draft” for .drft files (for now).');
+        return;
+      }
+
+      const text = await file.text();
+
+// 1) Scrub through contract first
+// NOTE: you need to import cleanHTML at top of main.js (see below)
+const { html } = cleanHTML(text);
+
+// 2) Store canonical clean HTML
+docState.setCleanHtml(html, { from: 'import' });
+if (htmlEditor) htmlEditor.value = html;
+
+// 3) Prep: load into editor
+if (lexicalEditor) {
+  suppressWysiwygToHtml = true;
+  try {
+    importHtmlToEditor(lexicalEditor, html);
+  } finally {
+    setTimeout(() => (suppressWysiwygToHtml = false), 0);
+  }
+}
+
+setActiveView('wysiwyg');
+
+    });
+
+    input.click();
+  } finally {
+    menuPanel?.classList.add('hidden');
+  }
+});
+
+  // Menu: Save draft (delegates to btnSave)
+    menuSave?.addEventListener('click', () => {
+    saveDraftFile();
+    menuPanel?.classList.add('hidden');
+  });
+
+  menuSaveAs?.addEventListener("click", async () => {
+  await saveDraftFile({ forceSaveAs: true });
+  menuPanel?.classList.add("hidden");
+});
+
+
+
+  // Menu: Open draft
+  menuOpenDraft?.addEventListener('click', () => {
+    openDraftPicker();
+    menuPanel?.classList.add('hidden');
+  });
+
+  // Menu: Publish HTML
+    menuExportHtml?.addEventListener('click', () => {
+    publishStandaloneHtmlFile();
+    menuPanel?.classList.add('hidden');
+  });
+
+    // Keep export fragment in sync with HTML view edits
+  // htmlEditor?.addEventListener('input', () => {
+  //   if (getActiveView() !== 'html') return;
+  //   docState.setCleanHtml(htmlEditor.value || '', { from: 'html' });
+  // });
+
+
+
+  // ============================================================
+  // 8) INIT DEFAULT STATE
+  // ============================================================
+  docState.setCleanHtml('', { from: 'system' });
+  setActiveView('wysiwyg');
+  updateDraftFooterName();
+
+  // ============================================================
+  // 9) MOUNT LEXICAL (last)
+  // ============================================================
+  mountWysiwygEditor({
+    onEditorReady: (editor) => {
+      lexicalEditor = editor;
+    },
+    onHtmlChange: (html) => {
   if (suppressWysiwygToHtml) return;
 
-  // Only live-sync into docState/HTML view when WYSIWYG is the active view
-  if (getActiveView() !== 'wysiwyg') return;
-
-  docState.setCleanHtml(html, { from: 'wysiwyg' });
+  const { html: cleaned } = cleanHTML(html);
+  docState.setCleanHtml(cleaned, { from: 'wysiwyg' });
 },
 
+  });
 });
-
-
-});
-

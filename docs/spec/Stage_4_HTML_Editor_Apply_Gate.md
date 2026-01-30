@@ -16,7 +16,7 @@ After this stage, HTML edits are applied intentionally, not live-synced.
 
 ## 3. User Workflow
 1. User edits HTML
-2. User clicks Apply
+2. User clicks update
 3. Editor updates
 
 ## 4. System Responsibilities

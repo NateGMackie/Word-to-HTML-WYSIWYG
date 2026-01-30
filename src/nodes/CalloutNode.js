@@ -160,6 +160,12 @@ export function $isCalloutNode(node) {
  *
  * Returns the "space" TextNode after the label so the caller can place the caret there.
  */
+
+/**
+ * @deprecated
+ * Auto-labeling has been intentionally disabled.
+ * Callouts are structural only; authors add labels manually if desired.
+ */
 export function $initializeCalloutLabel(calloutNode) {
   const kind = calloutNode.getKind();
 

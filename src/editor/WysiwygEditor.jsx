@@ -17,7 +17,7 @@ import ToolbarBridgePlugin from './ToolbarBridgePlugin.jsx';
 import BlockFormatBridgePlugin from './BlockFormatBridgePlugin.jsx';
 import CalloutBridgePlugin from './CalloutBridgePlugin.jsx';
 import InlineFormatBridgePlugin from './InlineFormatBridgePlugin.jsx';
-import { KeyboardPlugin } from '../plugins/KeyboardPlugin.js';
+import { KeyboardPlugin } from '../utils/KeyboardPlugin.js';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 
 

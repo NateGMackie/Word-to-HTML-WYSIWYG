@@ -5,7 +5,9 @@ export function initWordView({
   elements,
   docState,
   setActiveView,
+  loadHtmlIntoEditor,
 }) {
+
   const {
     wordInput,
     btnPaste,
@@ -19,13 +21,27 @@ export function initWordView({
 
   // Clean: run Word → Clean HTML pipeline, then push into state and go to WYSIWYG
   btnClean?.addEventListener("click", () => {
-    const rawWordHtml = wordInput.innerHTML;
-    const cleaned = cleanHTML(rawWordHtml);
+  const rawWordHtml = wordInput.innerHTML;
 
-    docState.setCleanHtml(cleaned, { from: "system" });
-    setActiveView("html");
-  });
+  // 1) Scrub through contract
+  const { html } = cleanHTML(rawWordHtml);
 
+  // 2) Store canonical clean HTML
+  docState.setCleanHtml(html, { from: "word" });
+
+  // 3) Keep HTML view textarea in sync (so switching views shows clean HTML)
+  if (htmlEditor) htmlEditor.value = html;
+
+  // 4) Prep: load into editor + go edit
+  loadHtmlIntoEditor?.(html);
+  setActiveView("wysiwyg");
+});
+
+  btnClearAll?.addEventListener("click", () => {
+  // Word Reset is *not* "New document" — it just clears the Word paste area.
+  wordInput.innerHTML = "";
+  wordInput.focus?.();
+});
   // Reset everything
   // btnClearAll?.addEventListener("click", () => {
     // wordInput.innerHTML = "";
